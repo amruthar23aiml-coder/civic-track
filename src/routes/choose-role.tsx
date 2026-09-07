@@ -69,7 +69,7 @@ function ChooseRolePage() {
                   asChild
                   className="mt-6 w-full"
                 >
-                  <a href="/">
+                  <a href="/auth?role=citizen">
                     Continue as Citizen
                   </a>
                 </Button>

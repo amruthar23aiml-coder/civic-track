@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect , useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CalendarPlus, MapPin, Recycle, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,11 @@ import heroImage from "@/assets/hero-cleanup.jpg";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
+   beforeLoad: () => {
+    throw redirect({
+      to: "/choose-role",
+    });
+  },
   head: () => ({
     meta: [
 

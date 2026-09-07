@@ -229,13 +229,13 @@ async function handleSubmit(e: React.FormEvent) {
               Garbage
             </option>
             <option value="plastic">
-              Plastic Waste
+              Pothole
             </option>
             <option value="construction_waste">
-              Construction Waste
+              Illegal construction
             </option>
             <option value="overflowing_bin">
-              Overflowing Bin
+              Parking on footpath
             </option>
             <option value="illegal_dumping">
               Illegal Dumping
@@ -305,7 +305,7 @@ async function handleSubmit(e: React.FormEvent) {
 </div>
 
           <Button type="submit" className="w-full">
-            Submit Garbage Report
+            Submit the Report
           </Button>
         </form>
       </div>
