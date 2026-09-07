@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ChooseRoleRouteImport } from './routes/choose-role'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as MapRouteImport } from './routes/map'
@@ -40,6 +41,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChooseRoleRoute = ChooseRoleRouteImport.update({
+  id: '/choose-role',
+  path: '/choose-role',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DonateRoute = DonateRouteImport.update({
@@ -124,6 +130,7 @@ const AuthenticatedEventsNewRoute = AuthenticatedEventsNewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/choose-role': typeof ChooseRoleRoute
   '/donate': typeof DonateRoute
   '/leaderboard': typeof LeaderboardRoute
   '/map': typeof MapRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/choose-role': typeof ChooseRoleRoute
   '/donate': typeof DonateRoute
   '/leaderboard': typeof LeaderboardRoute
   '/map': typeof MapRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/choose-role': typeof ChooseRoleRoute
   '/donate': typeof DonateRoute
   '/leaderboard': typeof LeaderboardRoute
   '/map': typeof MapRoute
@@ -184,6 +193,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/choose-role'
     | '/donate'
     | '/leaderboard'
     | '/map'
@@ -203,6 +213,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/choose-role'
     | '/donate'
     | '/leaderboard'
     | '/map'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/choose-role'
     | '/donate'
     | '/leaderboard'
     | '/map'
@@ -243,6 +255,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ChooseRoleRoute: typeof ChooseRoleRoute
   DonateRoute: typeof DonateRoute
   LeaderboardRoute: typeof LeaderboardRoute
   MapRoute: typeof MapRoute
@@ -271,6 +284,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/choose-role': {
+      id: '/choose-role'
+      path: '/choose-role'
+      fullPath: '/choose-role'
+      preLoaderRoute: typeof ChooseRoleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/donate': {
@@ -423,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ChooseRoleRoute: ChooseRoleRoute,
   DonateRoute: DonateRoute,
   LeaderboardRoute: LeaderboardRoute,
   MapRoute: MapRoute,

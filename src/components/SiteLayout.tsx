@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   BarChart3,
   CalendarDays,
+  CalendarPlus,
   HeartHandshake,
   Leaf,
   LogOut,
@@ -36,6 +37,14 @@ const VOLUNTEER_NAV: NavItem[] = [
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
+const ORGANIZER_NAV: NavItem[] = [
+  { to: "/dashboard", label: "My activity", icon: BarChart3 },
+  { to: "/events", label: "Browse events", icon: CalendarDays },
+  { to: "/events/new", label: "Create initiative", icon: CalendarPlus },
+  { to: "/donate", label: "Donate", icon: HeartHandshake },
+  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+];
+
 const AUTHORITY_NAV: NavItem[] = [
   { to: "/authority", label: "Reports", icon: ShieldCheck },
 ];
@@ -47,22 +56,43 @@ const ADMIN_NAV: NavItem[] = [
   { to: "/admin/announcements", label: "Announcements", icon: Megaphone },
 ];
 
-export type LayoutRole = "public" | "volunteer" | "admin" | "authority";
+export type LayoutRole =
+  | "public"
+  | "volunteer"
+  | "organizer"
+  | "admin"
+  | "authority";
 
 export function SiteLayout({ children, role }: { children: React.ReactNode; role?: LayoutRole }) {
-  const { user, isAdmin } = useAuth();
+  const {
+  user,
+  isAdmin,
+  isOrganizer,
+  isAuthority,
+} = useAuth();
   const [open, setOpen] = useState(false);
 
   const resolved: LayoutRole =
-  role ?? (isAdmin ? "admin" : user ? "volunteer" : "public");
+  role ??
+  (isAdmin
+    ? "admin"
+    : isAuthority
+      ? "authority"
+      : isOrganizer
+        ? "organizer"
+        : user
+          ? "volunteer"
+          : "public");
 
   const isAdminShell = resolved === "admin";
   const isAuthorityShell = resolved === "authority";
 
   const nav = isAdminShell
-    ? ADMIN_NAV
-    : isAuthorityShell
-      ? AUTHORITY_NAV
+  ? ADMIN_NAV
+  : isAuthorityShell
+    ? AUTHORITY_NAV
+    : resolved === "organizer"
+      ? ORGANIZER_NAV
       : resolved === "volunteer"
         ? VOLUNTEER_NAV
         : PUBLIC_NAV;
@@ -124,6 +154,15 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
               </Button>
             )}
             {user ? (
+            <>
+              {!isAdminShell && !isAuthorityShell && (
+                <Button asChild variant="outline" size="sm">
+                  <Link to={isOrganizer ? "/events/new" : "/dashboard"}>
+                    {isOrganizer ? "Create initiative" : "My activity"}
+                  </Link>
+                </Button>
+              )}
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -132,11 +171,20 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
               >
                 <LogOut className="size-4" /> Sign out
               </Button>
-            ) : (
-              <Button asChild size="sm">
-                <Link to="/auth">Join as volunteer</Link>
-              </Button>
-            )}
+            </>
+          ) : (
+            <Button asChild size="sm">
+              <Link
+                to="/auth"
+                search={{
+                  role: "citizen",
+                }}
+              >
+                Sign In
+              </Link>
+            </Button>
+          )}
+            )
             <Button
               variant="ghost"
               size="icon"
@@ -169,8 +217,8 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
       <main className="flex-1">{children}</main>
       <footer className={cn("border-t border-border", isAdminShell ? "bg-card" : "bg-secondary/40")}>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-medium text-foreground">CareCircle — volunteers, NGOs and community organisers</p>
-          <p>Organise. Volunteer. Measure the impact.</p>
+          <p className="font-medium text-foreground">
+           CivicTrack — citizens, volunteers, authorities and communities</p>
         </div>
       </footer>
     </div>

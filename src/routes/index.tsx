@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CalendarPlus, MapPin, Recycle, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,9 @@ import { SiteLayout } from "@/components/SiteLayout";
 import { EventCard } from "@/components/EventCard";
 import { MapPanel } from "@/components/MapPanel";
 import { eventsQuery, statsQuery } from "@/lib/data";
+import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@/assets/hero-cleanup.jpg";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,9 +31,56 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const navigate = useNavigate();
+
+  const {
+    user,
+    isAdmin,
+    isOrganizer,
+  } = useAuth();
+
   const { data: stats } = useQuery(statsQuery());
   const { data: events = [] } = useQuery(eventsQuery("upcoming"));
   const next = events.slice(0, 3);
+
+    function handleReportIssue() {
+    if (user) {
+      navigate({
+        to: "/report",
+      });
+      return;
+    }
+
+    navigate({
+      to: "/auth",
+      search: {
+        role: "citizen",
+      },
+    });
+  }
+
+    function handleCreateInitiative() {
+    if (!user) {
+      navigate({
+        to: "/auth",
+        search: {
+          role: "citizen",
+        },
+      });
+      return;
+    }
+
+    if (isOrganizer || isAdmin) {
+      navigate({
+        to: "/events/new",
+      });
+      return;
+    }
+
+    toast.info(
+      "Organizer access is required to create a community initiative.",
+    );
+  }
 
   const tiles = [
     { label: "Clean-ups hosted", value: stats?.total_events ?? 0, icon: CalendarPlus },
@@ -53,16 +102,34 @@ function Index() {
               Report issues, join community initiatives, and track the impact your actions make. CivicTrack connects citizens and communities to create cleaner, safer, and better neighbourhoods.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Button asChild size="lg">
-                <Link to="/report">Report an Issue</Link>
-              </Button>
-               <Button asChild size="lg" variant="outline">
-                <Link to="/events">Browse community initiatives near you</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link to="/leaderboard">See the leaderboard</Link>
-              </Button>
-            </div>
+  <Button
+    size="lg"
+    onClick={handleReportIssue}
+  >
+    <AlertTriangle className="mr-2 size-5" />
+    Report an Issue
+  </Button>
+
+  <Button
+    asChild
+    size="lg"
+    variant="outline"
+  >
+    <Link to="/events">
+      <Users className="mr-2 size-5" />
+      Join an Initiative
+    </Link>
+  </Button>
+
+  <Button
+    size="lg"
+    variant="outline"
+    onClick={handleCreateInitiative}
+  >
+    <CalendarPlus className="mr-2 size-5" />
+    Create an Initiative
+  </Button>
+</div>
           </div>
           <img
             src={heroImage}
@@ -71,68 +138,6 @@ function Index() {
             height={1000}
             className="w-full rounded-3xl border border-border object-cover shadow-lg"
           />
-        </div>
-      </section>
-       
-             <section className="mx-auto w-full max-w-6xl px-4 pb-12">
-        <div className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 p-6 md:p-8">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-4">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
-                <AlertTriangle className="size-6 text-primary" />
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.15em] text-primary">
-                  Community action
-                </p>
-
-                <h2 className="mt-1 text-2xl font-bold">
-                  See a garbage problem?
-                </h2>
-
-                <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-                  Report garbage in your community with a photo, description,
-                  and location so it can be addressed faster.
-                </p>
-              </div>
-            </div>
-
-            <Button asChild size="lg" className="shrink-0">
-              <Link to="/report">Report Garbage</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-         
-              <section className="mx-auto w-full max-w-6xl px-4 pb-12">
-        <div className="overflow-hidden rounded-3xl border border-primary/20 bg-primary/5 p-6 md:p-8">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-start gap-4">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
-                <AlertTriangle className="size-6 text-primary" />
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.15em] text-primary">
-                  Community action
-                </p>
-
-                <h2 className="mt-1 text-2xl font-bold">
-                  See a garbage problem?
-                </h2>
-
-                <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-                  Report garbage in your community with a photo, description,
-                  and location so it can be addressed faster.
-                </p>
-              </div>
-            </div>
-
-            <Button asChild size="lg" className="shrink-0">
-              <Link to="/report">Report Garbage</Link>
-            </Button>
-          </div>
         </div>
       </section>
 
