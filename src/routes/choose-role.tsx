@@ -72,7 +72,7 @@ function ChooseRolePage() {
                         "citizen",
                       );
 
-                      window.location.replace("/");
+                      window.location.replace(window.location.origin + "/");
                     }}
                   >
                     Continue as Citizen
