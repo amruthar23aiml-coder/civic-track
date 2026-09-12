@@ -64,15 +64,19 @@ function ChooseRolePage() {
                   Report civic problems, explore community initiatives,
                   volunteer, and track your contribution.
                 </p>
+                  <Button
+                    className="mt-6 w-full"
+                    onClick={() => {
+                      sessionStorage.setItem(
+                        "civictrack-role-selected",
+                        "citizen",
+                      );
 
-                <Button
-                  asChild
-                  className="mt-6 w-full"
-                >
-                  <a href="/auth?role=citizen">
+                      window.location.replace("/");
+                    }}
+                  >
                     Continue as Citizen
-                  </a>
-                </Button>
+                  </Button>
               </div>
 
               <div className="surface-card flex flex-col p-6">
@@ -94,9 +98,14 @@ function ChooseRolePage() {
                   variant="outline"
                   className="mt-6 w-full"
                 >
-                  <a href="/auth?role=authority">
-                    Authority Sign In
-                  </a>
+                  <a
+                  href="/auth?role=authority"
+                  onClick={() => {
+                    sessionStorage.setItem("civictrack-role-selected", "authority");
+                  }}
+                >
+                  Authority Sign In
+                </a>
                 </Button>
               </div>
             </div>

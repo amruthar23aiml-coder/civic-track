@@ -202,109 +202,108 @@ export function ReportLocationMap({
               event.latLng.lng(),
             );
           });
+if (
+  searchInputRef.current &&
+  window.google.maps.places?.Autocomplete
+) {
+  autocompleteRef.current =
+    new window.google.maps.places.Autocomplete(
+      searchInputRef.current,
+      {
+        fields: [
+          "formatted_address",
+          "geometry",
+          "name",
+          "place_id",
+        ],
+        types: ["geocode"],
+      },
+    );
 
-          if (searchInputRef.current) {
-            autocompleteRef.current =
-              new window.google.maps.places.Autocomplete(
-                searchInputRef.current,
-                {
-                  fields: [
-                    "formatted_address",
-                    "geometry",
-                    "name",
-                  ],
-                  types: ["geocode"],
-                },
-              );
+  autocompleteRef.current.addListener(
+    "place_changed",
+    () => {
+      const place =
+        autocompleteRef.current?.getPlace();
 
-            autocompleteRef.current.addListener(
-              "place_changed",
-              () => {
-                const place =
-                  autocompleteRef.current?.getPlace();
+      if (!place?.geometry?.location) {
+        return;
+      }
 
-                if (
-                  !place?.geometry?.location
-                ) {
-                  return;
-                }
+      const selectedLatitude =
+        place.geometry.location.lat();
 
-                const selectedLatitude =
-                  place.geometry.location.lat();
+      const selectedLongitude =
+        place.geometry.location.lng();
 
-                const selectedLongitude =
-                  place.geometry.location.lng();
+      const selectedAddress =
+        place.formatted_address ||
+        place.name ||
+        "Selected location";
 
-                const selectedAddress =
-                  place.formatted_address ||
-                  place.name ||
-                  "Selected location";
+      const placeId = place.place_id;
 
-                  const placeId = place.place_id;
+      setSearchValue(selectedAddress);
+      setAddress(selectedAddress);
 
-                setSearchValue(selectedAddress);
-                setAddress(selectedAddress);
+      if (mapRef.current) {
+        mapRef.current.panTo({
+          lat: selectedLatitude,
+          lng: selectedLongitude,
+        });
 
-                if (mapRef.current) {
-                  mapRef.current.panTo({
-                    lat: selectedLatitude,
-                    lng: selectedLongitude,
-                  });
+        mapRef.current.setZoom(16);
+      }
 
-                  mapRef.current.setZoom(16);
-                }
+      if (!markerRef.current) {
+        markerRef.current =
+          new window.google.maps.Marker({
+            position: {
+              lat: selectedLatitude,
+              lng: selectedLongitude,
+            },
+            map: mapRef.current,
+            draggable: true,
+            title: "Selected garbage location",
+          });
 
-                if (!markerRef.current) {
-                  markerRef.current =
-                    new window.google.maps.Marker({
-                      position: {
-                        lat: selectedLatitude,
-                        lng: selectedLongitude,
-                      },
-                      map: mapRef.current,
-                      draggable: true,
-                      title: "Selected garbage location",
-                    });
+        markerRef.current.addListener(
+          "dragend",
+          () => {
+            const markerPosition =
+              markerRef.current?.getPosition();
 
-                  markerRef.current.addListener(
-                    "dragend",
-                    () => {
-                      const markerPosition =
-                        markerRef.current?.getPosition();
+            if (!markerPosition) {
+              return;
+            }
 
-                      if (!markerPosition) {
-                        return;
-                      }
-
-                      updateLocationFromLatLng(
-                        markerPosition.lat(),
-                        markerPosition.lng(),
-                        false,
-                      );
-                    },
-                  );
-                } else {
-                  markerRef.current.setPosition({
-                    lat: selectedLatitude,
-                    lng: selectedLongitude,
-                  });
-
-                  markerRef.current.setMap(
-                    mapRef.current,
-                  );
-                }
-
-                onLocationSelect(
-                  selectedLatitude,
-                  selectedLongitude,
-                  selectedAddress,
-                  placeId,
-                );
-              },
+            updateLocationFromLatLng(
+              markerPosition.lat(),
+              markerPosition.lng(),
+              false,
             );
-          }
+          },
+        );
+      } else {
+        markerRef.current.setPosition({
+          lat: selectedLatitude,
+          lng: selectedLongitude,
+        });
 
-          setMapReady(true);
+        markerRef.current.setMap(
+          mapRef.current,
+        );
+      }
+
+      onLocationSelect(
+        selectedLatitude,
+        selectedLongitude,
+        selectedAddress,
+        placeId,
+      );
+    },
+  );
+}
 
           if (latitude != null && longitude != null) {
             updateLocationFromLatLng(

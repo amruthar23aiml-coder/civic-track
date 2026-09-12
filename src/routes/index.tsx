@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect , useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link,redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CalendarPlus, MapPin, Recycle, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,30 @@ import { eventsQuery, statsQuery } from "@/lib/data";
 import { useAuth } from "@/hooks/useAuth";
 import heroImage from "@/assets/hero-cleanup.jpg";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
-   beforeLoad: () => {
+  ssr: false,
+
+  beforeLoad: async () => {
+    const roleSelected =
+      sessionStorage.getItem("civictrack-role-selected");
+
+    if (roleSelected === "citizen") {
+      return;
+    }
+
+    const { data } = await supabase.auth.getSession();
+
+    if (data.session) {
+      return;
+    }
+
     throw redirect({
       to: "/choose-role",
     });
   },
+
   head: () => ({
     meta: [
 
@@ -38,11 +55,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const navigate = useNavigate();
 
-  const {
-    user,
-    isAdmin,
-    isOrganizer,
-  } = useAuth();
+  const { user, isAdmin, isOrganizer } = useAuth();
 
   const { data: stats } = useQuery(statsQuery());
   const { data: events = [] } = useQuery(eventsQuery("upcoming"));
@@ -59,9 +72,10 @@ function Index() {
     navigate({
       to: "/auth",
       search: {
-        role: "citizen",
-      },
-    });
+    role: "citizen",
+    returnTo: "/report",
+  },
+});
   }
 
     function handleCreateInitiative() {

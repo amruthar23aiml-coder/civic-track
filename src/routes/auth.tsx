@@ -20,6 +20,7 @@ import { SiteLayout } from "@/components/SiteLayout";
 type SelectedRole = "citizen" | "authority";
 
 export const Route = createFileRoute("/auth")({
+   
   head: () => ({
     meta: [
       {
@@ -68,6 +69,18 @@ function getSelectedRole(): SelectedRole {
   return params.get("role") === "authority"
     ? "authority"
     : "citizen";
+}
+
+function getReturnTo(): "/report" | "/" {
+  if (typeof window === "undefined") {
+    return "/";
+  }
+
+  const params = new URLSearchParams(window.location.search);
+
+  return params.get("returnTo") === "/report"
+    ? "/report"
+    : "/";
 }
 
 function AuthPage() {
@@ -129,10 +142,15 @@ function AuthPage() {
       return;
     }
 
-    navigate({
-      to: "/",
-    });
-  }
+     sessionStorage.setItem(
+  "civictrack-role-selected",
+  "citizen",
+);
+
+navigate({
+  to: getReturnTo(),
+});
+}
 
   useEffect(() => {
     if (loading || !user) {

@@ -466,10 +466,12 @@ export type Database = {
   | "rejected"
 
 report_category:
+  | "streetlight"
+  | "pothole"
   | "garbage"
-  | "plastic"
-  | "construction_waste"
-  | "overflowing_bin"
+  | "drainage"
+  | "traffic"
+  | "infrastructure"
   | "illegal_dumping"
   | "other"
     }
