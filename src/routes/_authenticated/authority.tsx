@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   MapPin,
+  MessageCircle,
   RefreshCw,
   ShieldCheck,
   TriangleAlert,
@@ -16,6 +17,11 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { SiteLayout } from "@/components/SiteLayout";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -41,6 +47,30 @@ type ReportStatus =
   | "completed"
   | "rejected";
 
+const reportStatusOptions: {
+  value: ReportStatus;
+  label: string;
+}[] = [
+  { value: "submitted", label: "Submitted" },
+  { value: "verified", label: "Verified" },
+  { value: "assigned", label: "Assigned" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "rejected", label: "Rejected" },
+];
+
+const allowedStatusTransitions: Record<
+  ReportStatus,
+  ReportStatus[]
+> = {
+  submitted: ["submitted", "verified", "rejected"],
+  verified: ["verified", "assigned", "rejected"],
+  assigned: ["assigned", "in_progress", "rejected"],
+  in_progress: ["in_progress", "completed", "rejected"],
+  completed: ["completed", "in_progress", "rejected"],
+  rejected: ["rejected", "submitted"],
+};
+
 function AuthorityDashboard() {
   const { user, isAuthority, loading } = useAuth();
   const queryClient = useQueryClient();
@@ -54,6 +84,7 @@ function AuthorityDashboard() {
         .select(
           `
             id,
+            user_id,
             title,
             description,
             category,
@@ -77,7 +108,39 @@ function AuthorityDashboard() {
         throw error;
       }
 
-      return data ?? [];
+      const reportRows = data ?? [];
+      const userIds = [
+        ...new Set(reportRows.map((report) => report.user_id)),
+      ];
+
+      if (userIds.length === 0) {
+        return reportRows.map((report) => ({
+          ...report,
+          reporter: null,
+        }));
+      }
+
+      const { data: profiles, error: profilesError } =
+        await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", userIds);
+
+      if (profilesError) {
+        throw profilesError;
+      }
+
+      const profilesById = new Map(
+        (profiles ?? []).map((profile) => [
+          profile.id,
+          profile,
+        ]),
+      );
+
+      return reportRows.map((report) => ({
+        ...report,
+        reporter: profilesById.get(report.user_id) ?? null,
+      }));
     },
   });
 
@@ -105,6 +168,20 @@ function AuthorityDashboard() {
     reportId: string,
     newStatus: ReportStatus,
   ) => {
+    const currentReport = reports.data?.find(
+      (report) => report.id === reportId,
+    );
+
+    if (
+      !currentReport ||
+      !allowedStatusTransitions[
+        currentReport.status as ReportStatus
+      ]?.includes(newStatus)
+    ) {
+      toast.error("That status transition is not available.");
+      return;
+    }
+
     const updateData: {
       status: ReportStatus;
       completed_at?: string | null;
@@ -114,7 +191,8 @@ function AuthorityDashboard() {
 
     updateData.completed_at =
       newStatus === "completed"
-        ? new Date().toISOString()
+        ? currentReport.completed_at ??
+          new Date().toISOString()
         : null;
 
     const { error } = await supabase
@@ -157,7 +235,7 @@ function AuthorityDashboard() {
       if (uploadError) {
         console.error(uploadError);
         toast.error(
-          "Could not upload the cleanup photo.",
+          "Could not upload the resolution photo.",
         );
         return;
       }
@@ -180,7 +258,7 @@ function AuthorityDashboard() {
       }
 
       toast.success(
-        "Cleanup photo uploaded and report completed.",
+        "Resolution photo uploaded and report completed.",
       );
 
       await queryClient.invalidateQueries({
@@ -361,7 +439,7 @@ function AuthorityDashboard() {
         <section>
           <div className="mb-5">
             <h2 className="text-2xl font-bold">
-              Garbage Reports
+              Community Reports
             </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
@@ -372,14 +450,14 @@ function AuthorityDashboard() {
           {reports.isLoading && (
             <div className="surface-card flex items-center justify-center p-12">
               <RefreshCw className="mr-2 size-4 animate-spin" />
-              Loading garbage reports...
+              Loading community reports...
             </div>
           )}
 
           {reports.isError && (
             <div className="surface-card p-6">
               <p className="font-medium">
-                Unable to load garbage reports.
+                Unable to load community reports.
               </p>
 
               <p className="mt-1 text-sm text-muted-foreground">
@@ -401,7 +479,7 @@ function AuthorityDashboard() {
                 <MapPin className="mx-auto size-10 text-muted-foreground" />
 
                 <h2 className="mt-4 text-lg font-semibold">
-                  No garbage reports
+                  No community reports
                 </h2>
 
                 <p className="mt-2 text-sm text-muted-foreground">
@@ -416,6 +494,55 @@ function AuthorityDashboard() {
                 key={report.id}
                 className="surface-card overflow-hidden"
               >
+                <div className="flex items-center justify-between gap-3 p-5 pb-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar className="size-11 border border-primary/20">
+                      {report.reporter?.avatar_url && (
+                        <AvatarImage
+                          src={report.reporter.avatar_url}
+                          alt={`${report.reporter.full_name} profile`}
+                        />
+                      )}
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {(
+                          report.reporter?.full_name ||
+                          "Citizen"
+                        )
+                          .slice(0, 1)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">
+                        {report.reporter?.full_name ||
+                          "CivicTrack Citizen"}
+                      </p>
+
+                      <p className="truncate text-sm text-muted-foreground">
+                        {report.location_name ||
+                          report.address ||
+                          "Location not provided"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() =>
+                      toast.info(
+                        "Secure reporter contact will be available soon.",
+                      )
+                    }
+                  >
+                    <MessageCircle className="mr-2 size-4" />
+                    Contact Reporter
+                  </Button>
+                </div>
+
                 {/* Before Photo */}
                 {report.before_image_url && (
                   <img
@@ -435,7 +562,7 @@ function AuthorityDashboard() {
                     <div>
                       <h3 className="text-lg font-semibold">
                         {report.title ||
-                          "Garbage Report"}
+                          "Community Report"}
                       </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">
@@ -524,69 +651,92 @@ function AuthorityDashboard() {
                       }
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm capitalize"
                     >
-                      <option value="submitted">
-                        Submitted
-                      </option>
-
-                      <option value="verified">
-                        Verified
-                      </option>
-
-                      <option value="assigned">
-                        Assigned
-                      </option>
-
-                      <option value="in_progress">
-                        In Progress
-                      </option>
-
-                      <option value="completed">
-                        Completed
-                      </option>
-
-                      <option value="rejected">
-                        Rejected
-                      </option>
+                      {reportStatusOptions.map((option) => (
+                        <option
+                          key={option.value}
+                          value={option.value}
+                          disabled={
+                            !allowedStatusTransitions[
+                              report.status as ReportStatus
+                            ]?.includes(option.value)
+                          }
+                        >
+                          {option.label}
+                        </option>
+                      ))}
                     </select>
+
+                    <p className="text-xs text-muted-foreground">
+                      Follow the workflow: Submitted → Verified →
+                      Assigned → In Progress → Completed. Rejected is
+                      available when the issue cannot be accepted or
+                      resolved.
+                    </p>
                   </div>
 
-                  {/* Cleanup Photo */}
+                  {/* Resolution */}
                   <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
                     <div className="mb-3 flex items-center gap-2">
                       <Upload className="size-4 text-primary" />
 
                       <p className="text-sm font-semibold">
-                        Cleanup Confirmation
+                        Resolution
                       </p>
                     </div>
 
                     {report.after_image_url ? (
                       <div className="space-y-3">
-                        <img
-                          src={
-                            `${import.meta.env["VITE_SUPABASE_URL"]}` +
-                            `/storage/v1/object/public/report-photos/` +
-                            `${report.after_image_url}`
-                          }
-                          alt="Completed cleanup"
-                          className="h-52 w-full rounded-lg object-cover"
-                        />
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              Before
+                            </p>
+                            {report.before_image_url ? (
+                              <img
+                                src={
+                                  `${import.meta.env["VITE_SUPABASE_URL"]}` +
+                                  `/storage/v1/object/public/report-photos/` +
+                                  `${report.before_image_url}`
+                                }
+                                alt="Issue before resolution"
+                                className="h-44 w-full rounded-lg object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-44 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+                                No before image
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              After
+                            </p>
+                            <img
+                              src={
+                                `${import.meta.env["VITE_SUPABASE_URL"]}` +
+                                `/storage/v1/object/public/report-photos/` +
+                                `${report.after_image_url}`
+                              }
+                              alt="Issue after resolution"
+                              className="h-44 w-full rounded-lg object-cover"
+                            />
+                          </div>
+                        </div>
 
                         <p className="text-xs font-medium text-green-600">
-                          ✓ Cleanup photo uploaded
+                          Resolved
                         </p>
                       </div>
                     ) : (
                       <div>
                         <p className="mb-3 text-xs text-muted-foreground">
-                          Upload a photo after the garbage
-                          has been cleaned. This will mark
-                          the report as completed.
+                          Upload a photo after the issue has been resolved. This will mark the report as completed.
                         </p>
 
                         <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90">
                           <Upload className="mr-2 size-4" />
-                          Upload Cleanup Photo
+                          Upload Resolution Photo
 
                           <input
                             type="file"
@@ -612,13 +762,13 @@ function AuthorityDashboard() {
                     )}
                   </div>
 
-                  {/* Completed */}
+                  {/* Resolved */}
                   {report.completed_at && (
                     <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm">
                       <CheckCircle2 className="size-4 text-green-600" />
 
                       <span>
-                        Completed on{" "}
+                        Resolved on{" "}
                         {format(
                           new Date(
                             report.completed_at,

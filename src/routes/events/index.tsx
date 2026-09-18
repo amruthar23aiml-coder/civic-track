@@ -28,14 +28,15 @@ function EventsPage() {
 
   return (
     <SiteLayout>
-      <div className="mx-auto w-full max-w-6xl px-4 py-12">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="mx-auto w-full max-w-7xl px-4 py-14">
+        <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-bold">Clean-up events</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Pick a site, claim a spot, bring gloves.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Community calendar</p>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight">Find your next good thing.</h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Pick a site, claim a spot, bring gloves. Every initiative is a small, visible way to move your neighbourhood forward.</p>
           </div>
           {isOrganizer && (
-            <Button asChild>
+            <Button asChild className="shadow-[0_12px_30px_-18px_var(--primary)]">
               <Link to="/events/new">
                 <Plus className="size-4" /> New event
               </Link>
@@ -43,13 +44,13 @@ function EventsPage() {
           )}
         </div>
 
-        <Tabs defaultValue="upcoming" className="mt-8">
-          <TabsList>
+        <Tabs defaultValue="upcoming" className="mt-10">
+          <TabsList className="rounded-full border border-border/70 bg-card/70 p-1">
             <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             <TabsTrigger value="past">Past</TabsTrigger>
             <TabsTrigger value="map">Map</TabsTrigger>
           </TabsList>
-          <TabsContent value="upcoming" className="pt-6">
+          <TabsContent value="upcoming" className="pt-7">
             {upcoming.data?.length ? (
               <div className="grid gap-4 md:grid-cols-3">
                 {upcoming.data.map((e) => (
@@ -57,10 +58,10 @@ function EventsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No upcoming events yet.</p>
+              <div className="surface-card p-8 text-center text-sm text-muted-foreground">Nothing happening here... yet 👀</div>
             )}
           </TabsContent>
-          <TabsContent value="past" className="pt-6">
+          <TabsContent value="past" className="pt-7">
             {past.data?.length ? (
               <div className="grid gap-4 md:grid-cols-3">
                 {past.data.map((e) => (
@@ -68,11 +69,13 @@ function EventsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No past events recorded.</p>
+              <div className="surface-card p-8 text-center text-sm text-muted-foreground">No past events recorded yet. Your impact log starts here.</div>
             )}
           </TabsContent>
-          <TabsContent value="map" className="pt-6">
-            <MapPanel events={[...(upcoming.data ?? []), ...(past.data ?? [])]} className="h-[520px]" />
+          <TabsContent value="map" className="pt-7">
+            <div className="overflow-hidden rounded-2xl border border-border/80 shadow-2xl shadow-black/20">
+              <MapPanel events={[...(upcoming.data ?? []), ...(past.data ?? [])]} className="h-[520px]" />
+            </div>
           </TabsContent>
         </Tabs>
       </div>

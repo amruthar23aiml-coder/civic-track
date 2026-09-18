@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import {
   BarChart3,
+  Bell,
   CalendarDays,
   CalendarPlus,
   HeartHandshake,
@@ -24,6 +25,7 @@ type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const PUBLIC_NAV: NavItem[] = [
   { to: "/events", label: "Events", icon: CalendarDays },
+  { to: "/reports", label: "Reports", icon: FileText },
   { to: "/donate", label: "Donate", icon: HeartHandshake },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
@@ -32,15 +34,16 @@ const VOLUNTEER_NAV: NavItem[] = [
   { to: "/dashboard", label: "My activity", icon: BarChart3 },
   { to: "/report", label: "Report an issue", icon: FileText },
   { to: "/my-reports", label: "My reports", icon: FileText },
+  { to: "/reports", label: "Community reports", icon: FileText },
   { to: "/events", label: "Browse events", icon: CalendarDays },
   { to: "/donate", label: "Donate", icon: HeartHandshake },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
+  { to: "/notifications", label: "Notifications", icon: Bell },
 ];
 
 const ORGANIZER_NAV: NavItem[] = [
   { to: "/dashboard", label: "My activity", icon: BarChart3 },
   { to: "/events", label: "Browse events", icon: CalendarDays },
-  { to: "/events/new", label: "Create initiative", icon: CalendarPlus },
   { to: "/donate", label: "Donate", icon: HeartHandshake },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
@@ -107,12 +110,12 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
             : "border-border/70 bg-background/85",
         )}
       >
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-6 px-4">
-          <Link to={isAdminShell ? "/admin" : "/"} className="flex items-center gap-2">
+        <div className="mx-auto flex h-[4.5rem] w-full max-w-7xl items-center gap-6 px-4">
+          <Link to={isAdminShell ? "/admin" : "/"} className="group flex items-center gap-2">
             <span
               className={cn(
-                "flex size-9 items-center justify-center rounded-xl",
-                isAdminShell ? "bg-background/15" : "leaf-gradient text-primary-foreground",
+                "flex size-9 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-[-6deg]",
+                isAdminShell ? "bg-background/15" : "bg-primary text-primary-foreground shadow-[0_8px_24px_-12px_var(--primary)]",
               )}
             >
               {isAdminShell ? <ShieldCheck className="size-5" /> : <Leaf className="size-5" />}
@@ -122,19 +125,19 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
               {isAdminShell && <span className="ml-2 text-xs font-medium uppercase opacity-80">Admin</span>}
             </span>
           </Link>
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-border/70 bg-card/60 p-1 md:flex">
             {nav.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-colors",
                   isAdminShell
                     ? "opacity-80 hover:bg-background/15 hover:opacity-100"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                    : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
                 )}
                 activeProps={{
-                  className: isAdminShell ? "bg-background/20 opacity-100" : "bg-secondary text-foreground",
+                  className: isAdminShell ? "bg-background/20 opacity-100" : "bg-primary/15 text-foreground",
                 }}
               >
                 <item.icon className="size-4" />
@@ -144,7 +147,7 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
           </nav>
           <div className="ml-auto flex items-center gap-2">
             {isAdmin && !isAdminShell && (
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="border-primary/35 hover:border-primary/70">
                 <Link to="/admin">Admin</Link>
               </Button>
             )}
@@ -184,7 +187,6 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
               </Link>
             </Button>
           )}
-            )
             <Button
               variant="ghost"
               size="icon"

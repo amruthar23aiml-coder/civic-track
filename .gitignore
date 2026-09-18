@@ -38,3 +38,4 @@ dist-ssr
 !.env.example
 
 supabase/.temp/
+.env*

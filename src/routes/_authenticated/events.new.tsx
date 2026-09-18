@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { SiteLayout } from "@/components/SiteLayout";
 import { CategoryChip } from "@/components/CategoryChip";
+import { ReportLocationMap } from "@/components/ReportLocationMap";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { geocodeAddress } from "@/lib/geocode.functions";
@@ -40,7 +41,7 @@ export const Route = createFileRoute("/_authenticated/events/new")({
 
 function NewEvent() {
   const navigate = useNavigate();
-  const { user, isOrganizer } = useAuth();
+  const { user } = useAuth();
   const [category, setCategory] = useState<EventCategory>("community_cleanup");
   const [categoryOther, setCategoryOther] = useState("");
   const [details, setDetails] = useState<Record<string, string>>({});
@@ -114,19 +115,6 @@ function NewEvent() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  if (!isOrganizer) {
-    return (
-      <SiteLayout>
-        <div className="mx-auto max-w-xl px-4 py-24 text-center">
-          <h1 className="text-2xl font-bold">Organiser access needed</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Only organisers and admins can create charity events. Ask an admin to grant you the organiser role.
-          </p>
-        </div>
-      </SiteLayout>
-    );
-  }
 
   return (
     <SiteLayout>
@@ -282,6 +270,30 @@ function NewEvent() {
                 Verify
               </Button>
             </div>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <Label>Pick initiative location</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Search for a place or click the map to save its coordinates
+                and address.
+              </p>
+            </div>
+            <ReportLocationMap
+              latitude={coords?.latitude ?? null}
+              longitude={coords?.longitude ?? null}
+              onLocationSelect={(
+                latitude,
+                longitude,
+                selectedAddress,
+              ) => {
+                setCoords({ latitude, longitude });
+                setForm((current) => ({
+                  ...current,
+                  address: selectedAddress,
+                }));
+              }}
+            />
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">

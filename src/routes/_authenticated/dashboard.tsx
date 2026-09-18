@@ -1,13 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarDays, Plus, Recycle, Trophy } from "lucide-react";
+import {
+  CalendarDays,
+  CheckCircle2,
+  MapPin,
+  Plus,
+  Recycle,
+  RefreshCw,
+  Trophy,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SiteLayout } from "@/components/SiteLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { earnedBadges, nextMilestone } from "@/lib/badges";
+import {
+  ReportStatusProgress,
+  reportStatusLabel,
+} from "@/components/ReportStatusProgress";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -57,6 +69,23 @@ function Dashboard() {
         .select("id, title, starts_at, status, registrations(id)")
         .eq("organizer_id", user!.id)
         .order("starts_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const myReports = useQuery({
+    queryKey: ["dashboard-reports", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reports")
+        .select(
+          "id, category, description, location_name, address, latitude, longitude, before_image_url, after_image_url, status, created_at, completed_at",
+        )
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
       return data ?? [];
     },
@@ -116,6 +145,132 @@ function Dashboard() {
             {nextEvent && `${nextEvent.threshold - attended} more clean-up(s) to unlock ${nextEvent.badge.label}. `}
             {nextWaste && `${(nextWaste.threshold - weight).toFixed(1)} kg more to unlock ${nextWaste.badge.label}.`}
           </p>
+        </section>
+
+        <section>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold">My Reports</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Track every civic issue you have submitted.
+              </p>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/my-reports">View all reports</Link>
+            </Button>
+          </div>
+
+          {myReports.isLoading && (
+            <div className="surface-card mt-3 flex items-center justify-center p-8">
+              <RefreshCw className="mr-2 size-4 animate-spin" />
+              <span className="text-sm text-muted-foreground">
+                Loading your reports...
+              </span>
+            </div>
+          )}
+
+          {!myReports.isLoading &&
+            (myReports.data ?? []).length === 0 && (
+              <div className="surface-card mt-3 p-6 text-sm text-muted-foreground">
+                You have not submitted any civic reports yet.
+              </div>
+            )}
+
+          <div className="mt-3 grid gap-5 lg:grid-cols-2">
+            {(myReports.data ?? []).map((report) => (
+              <article
+                key={report.id}
+                className="surface-card overflow-hidden"
+              >
+                {report.before_image_url && (
+                  <img
+                    src={`${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/object/public/report-photos/${report.before_image_url}`}
+                    alt="Reported civic issue"
+                    className="h-52 w-full object-cover"
+                  />
+                )}
+                <div className="space-y-4 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold capitalize">
+                        {report.category.replaceAll("_", " ")}
+                      </h3>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Submitted{" "}
+                        {format(
+                          new Date(report.created_at),
+                          "d MMM yyyy · HH:mm",
+                        )}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        report.status === "rejected"
+                          ? "destructive"
+                          : report.status === "completed"
+                            ? "default"
+                            : "secondary"
+                      }
+                      className="shrink-0"
+                    >
+                      {reportStatusLabel(report.status)}
+                    </Badge>
+                  </div>
+
+                  {report.description && (
+                    <p className="text-sm text-muted-foreground">
+                      {report.description}
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        report.latitude != null &&
+                        report.longitude != null
+                      ) {
+                        window.open(
+                          `https://www.google.com/maps/search/?api=1&query=${report.latitude},${report.longitude}`,
+                          "_blank",
+                          "noopener,noreferrer",
+                        );
+                      }
+                    }}
+                    className="flex w-full items-start gap-2 rounded-lg bg-muted p-3 text-left text-sm"
+                  >
+                    <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
+                    <span className="text-muted-foreground">
+                      {report.location_name ||
+                        report.address ||
+                        "Location not provided"}
+                    </span>
+                  </button>
+
+                  <ReportStatusProgress status={report.status} />
+
+                  {report.after_image_url && (
+                    <img
+                      src={`${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/object/public/report-photos/${report.after_image_url}`}
+                      alt="Resolved civic issue"
+                      className="h-44 w-full rounded-lg object-cover"
+                    />
+                  )}
+
+                  {report.completed_at && (
+                    <p className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-xs text-green-700">
+                      <CheckCircle2 className="size-4" />
+                      Completed{" "}
+                      {format(
+                        new Date(report.completed_at),
+                        "d MMM yyyy · HH:mm",
+                      )}
+                    </p>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
 
         <section>

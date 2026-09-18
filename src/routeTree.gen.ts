@@ -16,6 +16,8 @@ import { Route as ChooseRoleRouteImport } from './routes/choose-role'
 import { Route as DonateRouteImport } from './routes/donate'
 import { Route as LeaderboardRouteImport } from './routes/leaderboard'
 import { Route as MapRouteImport } from './routes/map'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAuthorityRouteImport } from './routes/_authenticated/authority'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -61,6 +63,16 @@ const LeaderboardRoute = LeaderboardRouteImport.update({
 const MapRoute = MapRouteImport.update({
   id: '/map',
   path: '/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -134,6 +146,8 @@ export interface FileRoutesByFullPath {
   '/donate': typeof DonateRoute
   '/leaderboard': typeof LeaderboardRoute
   '/map': typeof MapRoute
+  '/notifications': typeof NotificationsRoute
+  '/reports': typeof ReportsRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/authority': typeof AuthenticatedAuthorityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -154,6 +168,8 @@ export interface FileRoutesByTo {
   '/donate': typeof DonateRoute
   '/leaderboard': typeof LeaderboardRoute
   '/map': typeof MapRoute
+  '/notifications': typeof NotificationsRoute
+  '/reports': typeof ReportsRoute
   '/authority': typeof AuthenticatedAuthorityRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/my-reports': typeof AuthenticatedMyReportsRoute
@@ -175,6 +191,8 @@ export interface FileRoutesById {
   '/donate': typeof DonateRoute
   '/leaderboard': typeof LeaderboardRoute
   '/map': typeof MapRoute
+  '/notifications': typeof NotificationsRoute
+  '/reports': typeof ReportsRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/authority': typeof AuthenticatedAuthorityRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -197,6 +215,8 @@ export interface FileRouteTypes {
     | '/donate'
     | '/leaderboard'
     | '/map'
+    | '/notifications'
+    | '/reports'
     | '/admin'
     | '/authority'
     | '/dashboard'
@@ -217,6 +237,8 @@ export interface FileRouteTypes {
     | '/donate'
     | '/leaderboard'
     | '/map'
+    | '/notifications'
+    | '/reports'
     | '/authority'
     | '/dashboard'
     | '/my-reports'
@@ -237,6 +259,8 @@ export interface FileRouteTypes {
     | '/donate'
     | '/leaderboard'
     | '/map'
+    | '/notifications'
+    | '/reports'
     | '/_authenticated/admin'
     | '/_authenticated/authority'
     | '/_authenticated/dashboard'
@@ -259,6 +283,8 @@ export interface RootRouteChildren {
   DonateRoute: typeof DonateRoute
   LeaderboardRoute: typeof LeaderboardRoute
   MapRoute: typeof MapRoute
+  NotificationsRoute: typeof NotificationsRoute
+  ReportsRoute: typeof ReportsRoute
   EventsEventIdRoute: typeof EventsEventIdRoute
   EventsIndexRoute: typeof EventsIndexRoute
 }
@@ -312,6 +338,20 @@ declare module '@tanstack/react-router' {
       path: '/map'
       fullPath: '/map'
       preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -447,6 +487,8 @@ const rootRouteChildren: RootRouteChildren = {
   DonateRoute: DonateRoute,
   LeaderboardRoute: LeaderboardRoute,
   MapRoute: MapRoute,
+  NotificationsRoute: NotificationsRoute,
+  ReportsRoute: ReportsRoute,
   EventsEventIdRoute: EventsEventIdRoute,
   EventsIndexRoute: EventsIndexRoute,
 }

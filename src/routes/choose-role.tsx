@@ -65,21 +65,17 @@ function ChooseRolePage() {
                   volunteer, and track your contribution.
                 </p>
                   <Button
-                    className="mt-6 w-full"
-                    onClick={() => {
-                      sessionStorage.setItem(
-                        "civictrack-role-selected",
-                        "citizen",
-                      );
+                  className="mt-6 w-full"
+                  onClick={() => {
+                    sessionStorage.setItem("civictrack-role-selected", "citizen");
+                    window.location.href = "/";
+                  }}
+                >
+                  Continue as Citizen
+                </Button>
+                  </div>
 
-                      window.location.replace(window.location.origin + "/");
-                    }}
-                  >
-                    Continue as Citizen
-                  </Button>
-              </div>
-
-              <div className="surface-card flex flex-col p-6">
+                  <div className="surface-card flex flex-col p-6">
                 <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/10">
                   <ShieldCheck className="size-6 text-primary" />
                 </div>
