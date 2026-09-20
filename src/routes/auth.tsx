@@ -85,22 +85,20 @@ function getReturnTo(): "/report" | "/" {
 
 function AuthPage() {
   const navigate = useNavigate();
-
   const { user, loading } = useAuth();
 
-  const [selectedRole, setSelectedRole] =
-    useState<SelectedRole>("citizen");
+  const isAuthority =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("role") === "authority";
+
+  const selectedRole: SelectedRole = isAuthority
+    ? "authority"
+    : "citizen";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    setSelectedRole(getSelectedRole());
-  }, []);
-
-  const isAuthority = selectedRole === "authority";
 
   async function goToDestination(
     userId: string,
@@ -142,15 +140,15 @@ function AuthPage() {
       return;
     }
 
-     sessionStorage.setItem(
-  "civictrack-role-selected",
-  "citizen",
-);
+    sessionStorage.setItem(
+      "civictrack-role-selected",
+      "citizen",
+    );
 
-navigate({
-  to: getReturnTo(),
-});
-}
+    navigate({
+      to: getReturnTo(),
+    });
+  }
 
   useEffect(() => {
     if (loading || !user) {

@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeProvider } from "@/hooks/useTheme";
 
 function NotFoundComponent() {
   return (
@@ -88,14 +89,27 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "CleanSweep — Organise Community Clean-Ups" },
       {
         property: "og:description",
-        content: "Create clean-up events, recruit volunteers, track attendance and waste collected, and see your community climb the leaderboard.",
+        content:
+          "Create clean-up events, recruit volunteers, track attendance and waste collected, and see your community climb the leaderboard.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "CleanSweep — Organise Community Clean-Ups" },
-      { name: "twitter:description", content: "Create clean-up events, recruit volunteers, track attendance and waste collected, and see your community climb the leaderboard." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c48cba1-41f0-4874-89ba-055efc52f373/id-preview-dc16ade3--89562f52-13e7-4fe6-a83c-a1bc830f859d.lovable.app-1785776834707.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c48cba1-41f0-4874-89ba-055efc52f373/id-preview-dc16ade3--89562f52-13e7-4fe6-a83c-a1bc830f859d.lovable.app-1785776834707.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Create clean-up events, recruit volunteers, track attendance and waste collected, and see your community climb the leaderboard.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c48cba1-41f0-4874-89ba-055efc52f373/id-preview-dc16ade3--89562f52-13e7-4fe6-a83c-a1bc830f859d.lovable.app-1785776834707.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/5c48cba1-41f0-4874-89ba-055efc52f373/id-preview-dc16ade3--89562f52-13e7-4fe6-a83c-a1bc830f859d.lovable.app-1785776834707.png",
+      },
     ],
     links: [
       {
@@ -146,9 +160,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <Toaster richColors position="top-center" />
+      <ThemeProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <Toaster richColors position="top-center" />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SiteLayout } from "@/components/SiteLayout";
 import { useAuth } from "@/hooks/useAuth";
+import { ReportStatusProgress } from "@/components/ReportStatusProgress";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/my-reports")({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/my-reports")({
 
 function MyReports() {
   const { user } = useAuth();
-
+  console.log("MY REPORTS USER:", user);
   const reports = useQuery({
     queryKey: ["my-reports", user?.id],
     enabled: !!user,
@@ -132,9 +133,7 @@ function MyReports() {
         {reports.isLoading && (
           <div className="surface-card flex items-center justify-center p-10">
             <RefreshCw className="mr-2 size-4 animate-spin" />
-            <span className="text-sm text-muted-foreground">
-              Loading your reports...
-            </span>
+            <span className="text-sm text-muted-foreground">Loading your reports...</span>
           </div>
         )}
 
@@ -147,32 +146,36 @@ function MyReports() {
           </div>
         )}
 
-        {!reports.isLoading &&
-          !reports.isError &&
-          (reports.data ?? []).length === 0 && (
-            <div className="surface-card p-10 text-center">
-              <MapPin className="mx-auto size-10 text-muted-foreground" />
+        {!reports.isLoading && !reports.isError && (reports.data ?? []).length === 0 && (
+          <div className="surface-card p-10 text-center">
+            <MapPin className="mx-auto size-10 text-muted-foreground" />
 
-              <h2 className="mt-4 text-lg font-semibold">
-                No reports yet
-              </h2>
+            <h2 className="mt-4 text-lg font-semibold">No reports yet</h2>
 
-              <p className="mt-2 text-sm text-muted-foreground">
-                You haven't reported a garbage issue yet.
-              </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You haven't reported a garbage issue yet.
+            </p>
 
-              <Button asChild className="mt-5">
-                <Link to="/report">Report garbage</Link>
-              </Button>
-            </div>
-          )}
+            <Button asChild className="mt-5">
+              <Link to="/report">Report garbage</Link>
+            </Button>
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
           {(reports.data ?? []).map((report) => (
-            <article key={report.id} className="surface-card overflow-hidden">
+            <article
+              key={report.id}
+              id={`report-${report.id}`}
+              className="surface-card overflow-hidden transition-shadow duration-200 hover:shadow-lift"
+            >
               {report.before_image_url && (
                 <img
-                  src={`${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/object/public/report-photos/${report.before_image_url}`}
+                  src={
+                report.before_image_url?.startsWith("http")
+                  ? report.before_image_url
+                  : `${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/object/public/report-photos/${report.before_image_url}`
+              }
                   alt="Reported garbage"
                   className="h-56 w-full object-cover"
                 />
@@ -181,25 +184,29 @@ function MyReports() {
               <div className="space-y-4 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="font-semibold">
+                    <a
+                      href={`/my-reports#report-${report.id}`}
+                      className="font-semibold transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
                       {report.title || "Garbage Report"}
-                    </h2>
+                    </a>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {format(
-                        new Date(report.created_at),
-                        "d MMM yyyy · HH:mm",
-                      )}
+                      {format(new Date(report.created_at), "d MMM yyyy · HH:mm")}
                     </p>
                   </div>
 
-                  <Badge
-                    variant={getStatusVariant(report.status)}
-                    className="shrink-0 capitalize"
-                  >
+                  <Badge variant={getStatusVariant(report.status)} className="shrink-0 capitalize">
                     {getStatusLabel(report.status)}
                   </Badge>
                 </div>
+
+                <ReportStatusProgress
+                  status={report.status}
+                  statusDate={
+                    report.status === "completed" ? report.completed_at : report.updated_at
+                  }
+                />
 
                 <div>
                   <p className="text-sm font-medium">Category</p>
@@ -211,36 +218,25 @@ function MyReports() {
                 {report.description && (
                   <div>
                     <p className="text-sm font-medium">Description</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {report.description}
-                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">{report.description}</p>
                   </div>
                 )}
 
                 {report.location_name && (
                   <button
                     type="button"
-                    onClick={() =>
-                      openLocation(
-                        report.latitude,
-                        report.longitude,
-                      )
-                    }
+                    onClick={() => openLocation(report.latitude, report.longitude)}
                     className="flex w-full items-start gap-2 rounded-lg bg-muted p-3 text-left text-sm transition hover:bg-muted/70"
                   >
                     <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
 
-                    <span className="text-muted-foreground">
-                      {report.location_name}
-                    </span>
+                    <span className="text-muted-foreground">{report.location_name}</span>
                   </button>
                 )}
 
                 {report.after_image_url && (
                   <div>
-                    <p className="mb-2 text-sm font-medium">
-                      Completed photo
-                    </p>
+                    <p className="mb-2 text-sm font-medium">Completed photo</p>
 
                     <img
                       src={`${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/object/public/report-photos/${report.after_image_url}`}
@@ -252,11 +248,7 @@ function MyReports() {
 
                 {report.completed_at && (
                   <p className="text-xs text-muted-foreground">
-                    Completed{" "}
-                    {format(
-                      new Date(report.completed_at),
-                      "d MMM yyyy · HH:mm",
-                    )}
+                    Completed {format(new Date(report.completed_at), "d MMM yyyy · HH:mm")}
                   </p>
                 )}
               </div>

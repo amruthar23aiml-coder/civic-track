@@ -17,11 +17,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SiteLayout } from "@/components/SiteLayout";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -31,8 +27,7 @@ export const Route = createFileRoute("/_authenticated/authority")({
       { title: "Authority Dashboard — CivicTrack" },
       {
         name: "description",
-        content:
-          "Manage community garbage reports and cleanup progress.",
+        content: "Manage community garbage reports and cleanup progress.",
       },
     ],
   }),
@@ -40,12 +35,7 @@ export const Route = createFileRoute("/_authenticated/authority")({
 });
 
 type ReportStatus =
-  | "submitted"
-  | "verified"
-  | "assigned"
-  | "in_progress"
-  | "completed"
-  | "rejected";
+  "submitted" | "verified" | "assigned" | "in_progress" | "completed" | "rejected";
 
 const reportStatusOptions: {
   value: ReportStatus;
@@ -59,10 +49,7 @@ const reportStatusOptions: {
   { value: "rejected", label: "Rejected" },
 ];
 
-const allowedStatusTransitions: Record<
-  ReportStatus,
-  ReportStatus[]
-> = {
+const allowedStatusTransitions: Record<ReportStatus, ReportStatus[]> = {
   submitted: ["submitted", "verified", "rejected"],
   verified: ["verified", "assigned", "rejected"],
   assigned: ["assigned", "in_progress", "rejected"],
@@ -109,9 +96,7 @@ function AuthorityDashboard() {
       }
 
       const reportRows = data ?? [];
-      const userIds = [
-        ...new Set(reportRows.map((report) => report.user_id)),
-      ];
+      const userIds = [...new Set(reportRows.map((report) => report.user_id))];
 
       if (userIds.length === 0) {
         return reportRows.map((report) => ({
@@ -120,22 +105,16 @@ function AuthorityDashboard() {
         }));
       }
 
-      const { data: profiles, error: profilesError } =
-        await supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url")
-          .in("id", userIds);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
 
       if (profilesError) {
         throw profilesError;
       }
 
-      const profilesById = new Map(
-        (profiles ?? []).map((profile) => [
-          profile.id,
-          profile,
-        ]),
-      );
+      const profilesById = new Map((profiles ?? []).map((profile) => [profile.id, profile]));
 
       return reportRows.map((report) => ({
         ...report,
@@ -155,28 +134,17 @@ function AuthorityDashboard() {
           report.status === "verified" ||
           report.status === "assigned",
       ).length,
-      inProgress: data.filter(
-        (report) => report.status === "in_progress",
-      ).length,
-      completed: data.filter(
-        (report) => report.status === "completed",
-      ).length,
+      inProgress: data.filter((report) => report.status === "in_progress").length,
+      completed: data.filter((report) => report.status === "completed").length,
     };
   }, [reports.data]);
 
-  const updateStatus = async (
-    reportId: string,
-    newStatus: ReportStatus,
-  ) => {
-    const currentReport = reports.data?.find(
-      (report) => report.id === reportId,
-    );
+  const updateStatus = async (reportId: string, newStatus: ReportStatus) => {
+    const currentReport = reports.data?.find((report) => report.id === reportId);
 
     if (
       !currentReport ||
-      !allowedStatusTransitions[
-        currentReport.status as ReportStatus
-      ]?.includes(newStatus)
+      !allowedStatusTransitions[currentReport.status as ReportStatus]?.includes(newStatus)
     ) {
       toast.error("That status transition is not available.");
       return;
@@ -190,15 +158,9 @@ function AuthorityDashboard() {
     };
 
     updateData.completed_at =
-      newStatus === "completed"
-        ? currentReport.completed_at ??
-          new Date().toISOString()
-        : null;
+      newStatus === "completed" ? (currentReport.completed_at ?? new Date().toISOString()) : null;
 
-    const { error } = await supabase
-      .from("reports")
-      .update(updateData)
-      .eq("id", reportId);
+    const { error } = await supabase.from("reports").update(updateData).eq("id", reportId);
 
     if (error) {
       console.error(error);
@@ -206,22 +168,16 @@ function AuthorityDashboard() {
       return;
     }
 
-    toast.success(
-      `Report marked as ${newStatus.replaceAll("_", " ")}.`,
-    );
+    toast.success(`Report marked as ${newStatus.replaceAll("_", " ")}.`);
 
     await queryClient.invalidateQueries({
       queryKey: ["authority-reports"],
     });
   };
 
-  const uploadCleanupPhoto = async (
-    reportId: string,
-    file: File,
-  ) => {
+  const uploadCleanupPhoto = async (reportId: string, file: File) => {
     try {
-      const fileExtension =
-        file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const fileExtension = file.name.split(".").pop()?.toLowerCase() || "jpg";
 
       const fileName = `cleanup/after-${reportId}-${Date.now()}.${fileExtension}`;
 
@@ -234,9 +190,7 @@ function AuthorityDashboard() {
 
       if (uploadError) {
         console.error(uploadError);
-        toast.error(
-          "Could not upload the resolution photo.",
-        );
+        toast.error("Could not upload the resolution photo.");
         return;
       }
 
@@ -251,35 +205,24 @@ function AuthorityDashboard() {
 
       if (updateError) {
         console.error(updateError);
-        toast.error(
-          "Photo uploaded, but the report could not be completed.",
-        );
+        toast.error("Photo uploaded, but the report could not be completed.");
         return;
       }
 
-      toast.success(
-        "Resolution photo uploaded and report completed.",
-      );
+      toast.success("Resolution photo uploaded and report completed.");
 
       await queryClient.invalidateQueries({
         queryKey: ["authority-reports"],
       });
     } catch (error) {
       console.error(error);
-      toast.error(
-        "Something went wrong while uploading the photo.",
-      );
+      toast.error("Something went wrong while uploading the photo.");
     }
   };
 
-  const openLocation = (
-    latitude: number | null,
-    longitude: number | null,
-  ) => {
+  const openLocation = (latitude: number | null, longitude: number | null) => {
     if (latitude == null || longitude == null) {
-      toast.error(
-        "Location coordinates are not available.",
-      );
+      toast.error("Location coordinates are not available.");
       return;
     }
 
@@ -290,8 +233,7 @@ function AuthorityDashboard() {
     );
   };
 
-  const statusLabel = (status: string) =>
-    status.replaceAll("_", " ");
+  const statusLabel = (status: string) => status.replaceAll("_", " ");
 
   if (loading) {
     return (
@@ -299,9 +241,7 @@ function AuthorityDashboard() {
         <div className="mx-auto max-w-6xl px-4 py-12">
           <div className="surface-card flex items-center justify-center p-10">
             <RefreshCw className="mr-2 size-4 animate-spin" />
-            <p className="text-sm text-muted-foreground">
-              Checking authority access...
-            </p>
+            <p className="text-sm text-muted-foreground">Checking authority access...</p>
           </div>
         </div>
       </SiteLayout>
@@ -325,21 +265,15 @@ function AuthorityDashboard() {
                     <ShieldCheck className="size-6 text-primary" />
                   </div>
 
-                  <Badge variant="secondary">
-                    Authority Control Panel
-                  </Badge>
+                  <Badge variant="secondary">Authority Control Panel</Badge>
                 </div>
 
-                <h1 className="text-3xl font-bold tracking-tight">
-                  CivicTrack Authority
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tight">CivicTrack Authority</h1>
 
                 <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                  Review citizen garbage reports, manage
-                  cleanup progress, and confirm completed
+                  Review citizen garbage reports, manage cleanup progress, and confirm completed
                   civic actions.
                 </p>
-
               </div>
 
               <Button
@@ -351,13 +285,7 @@ function AuthorityDashboard() {
                 }
                 disabled={reports.isFetching}
               >
-                <RefreshCw
-                  className={`mr-2 size-4 ${
-                    reports.isFetching
-                      ? "animate-spin"
-                      : ""
-                  }`}
-                />
+                <RefreshCw className={`mr-2 size-4 ${reports.isFetching ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
             </div>
@@ -369,12 +297,8 @@ function AuthorityDashboard() {
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Reports Received
-                </p>
-                <p className="mt-2 text-3xl font-bold">
-                  {stats.total}
-                </p>
+                <p className="text-sm text-muted-foreground">Reports Received</p>
+                <p className="mt-2 text-3xl font-bold">{stats.total}</p>
               </div>
 
               <div className="rounded-full bg-primary/10 p-3">
@@ -386,16 +310,12 @@ function AuthorityDashboard() {
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Pending
-                </p>
-                <p className="mt-2 text-3xl font-bold">
-                  {stats.pending}
-                </p>
+                <p className="text-sm text-muted-foreground">Pending</p>
+                <p className="mt-2 text-3xl font-bold">{stats.pending}</p>
               </div>
 
-              <div className="rounded-full bg-yellow-500/10 p-3">
-                <Clock3 className="size-5 text-yellow-600" />
+              <div className="rounded-full bg-warning/10 p-3">
+                <Clock3 className="size-5 text-warning" />
               </div>
             </div>
           </div>
@@ -403,16 +323,12 @@ function AuthorityDashboard() {
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  In Progress
-                </p>
-                <p className="mt-2 text-3xl font-bold">
-                  {stats.inProgress}
-                </p>
+                <p className="text-sm text-muted-foreground">In Progress</p>
+                <p className="mt-2 text-3xl font-bold">{stats.inProgress}</p>
               </div>
 
-              <div className="rounded-full bg-blue-500/10 p-3">
-                <RefreshCw className="size-5 text-blue-600" />
+              <div className="rounded-full bg-information/10 p-3">
+                <RefreshCw className="size-5 text-information" />
               </div>
             </div>
           </div>
@@ -420,16 +336,12 @@ function AuthorityDashboard() {
           <div className="surface-card p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">
-                  Completed
-                </p>
-                <p className="mt-2 text-3xl font-bold">
-                  {stats.completed}
-                </p>
+                <p className="text-sm text-muted-foreground">Completed</p>
+                <p className="mt-2 text-3xl font-bold">{stats.completed}</p>
               </div>
 
-              <div className="rounded-full bg-green-500/10 p-3">
-                <CheckCircle2 className="size-5 text-green-600" />
+              <div className="rounded-full bg-success/10 p-3">
+                <CheckCircle2 className="size-5 text-success" />
               </div>
             </div>
           </div>
@@ -438,9 +350,7 @@ function AuthorityDashboard() {
         {/* Reports */}
         <section>
           <div className="mb-5">
-            <h2 className="text-2xl font-bold">
-              Community Reports
-            </h2>
+            <h2 className="text-2xl font-bold">Community Reports</h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
               Reports submitted by CivicTrack citizens.
@@ -456,44 +366,33 @@ function AuthorityDashboard() {
 
           {reports.isError && (
             <div className="surface-card p-6">
-              <p className="font-medium">
-                Unable to load community reports.
-              </p>
+              <p className="font-medium">Unable to load community reports.</p>
 
               <p className="mt-1 text-sm text-muted-foreground">
                 Please refresh the page and try again.
               </p>
 
               {reports.error instanceof Error && (
-                <p className="mt-3 text-xs text-destructive">
-                  {reports.error.message}
-                </p>
+                <p className="mt-3 text-xs text-destructive">{reports.error.message}</p>
               )}
             </div>
           )}
 
-          {!reports.isLoading &&
-            !reports.isError &&
-            reports.data?.length === 0 && (
-              <div className="surface-card p-12 text-center">
-                <MapPin className="mx-auto size-10 text-muted-foreground" />
+          {!reports.isLoading && !reports.isError && reports.data?.length === 0 && (
+            <div className="surface-card p-12 text-center">
+              <MapPin className="mx-auto size-10 text-muted-foreground" />
 
-                <h2 className="mt-4 text-lg font-semibold">
-                  No community reports
-                </h2>
+              <h2 className="mt-4 text-lg font-semibold">No community reports</h2>
 
-                <p className="mt-2 text-sm text-muted-foreground">
-                  New community reports will appear here.
-                </p>
-              </div>
-            )}
+              <p className="mt-2 text-sm text-muted-foreground">
+                New community reports will appear here.
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-6 lg:grid-cols-2">
             {(reports.data ?? []).map((report) => (
-              <article
-                key={report.id}
-                className="surface-card overflow-hidden"
-              >
+              <article key={report.id} className="surface-card overflow-hidden">
                 <div className="flex items-center justify-between gap-3 p-5 pb-3">
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="size-11 border border-primary/20">
@@ -504,25 +403,17 @@ function AuthorityDashboard() {
                         />
                       )}
                       <AvatarFallback className="bg-primary/10 text-primary">
-                        {(
-                          report.reporter?.full_name ||
-                          "Citizen"
-                        )
-                          .slice(0, 1)
-                          .toUpperCase()}
+                        {(report.reporter?.full_name || "Citizen").slice(0, 1).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="min-w-0">
                       <p className="truncate font-semibold">
-                        {report.reporter?.full_name ||
-                          "CivicTrack Citizen"}
+                        {report.reporter?.full_name || "CivicTrack Citizen"}
                       </p>
 
                       <p className="truncate text-sm text-muted-foreground">
-                        {report.location_name ||
-                          report.address ||
-                          "Location not provided"}
+                        {report.location_name || report.address || "Location not provided"}
                       </p>
                     </div>
                   </div>
@@ -532,11 +423,7 @@ function AuthorityDashboard() {
                     variant="outline"
                     size="sm"
                     className="shrink-0"
-                    onClick={() =>
-                      toast.info(
-                        "Secure reporter contact will be available soon.",
-                      )
-                    }
+                    onClick={() => toast.info("Secure reporter contact will be available soon.")}
                   >
                     <MessageCircle className="mr-2 size-4" />
                     Contact Reporter
@@ -561,63 +448,41 @@ function AuthorityDashboard() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold">
-                        {report.title ||
-                          "Community Report"}
+                        {report.title || "Community Report"}
                       </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Submitted{" "}
-                        {format(
-                          new Date(report.created_at),
-                          "d MMM yyyy · HH:mm",
-                        )}
+                        Submitted {format(new Date(report.created_at), "d MMM yyyy · HH:mm")}
                       </p>
                     </div>
 
-                    <Badge
-                      variant="secondary"
-                      className="shrink-0 capitalize"
-                    >
+                    <Badge variant="secondary" className="shrink-0 capitalize">
                       {statusLabel(report.status)}
                     </Badge>
                   </div>
 
                   {/* Category */}
                   <div>
-                    <p className="text-sm font-medium">
-                      Category
-                    </p>
+                    <p className="text-sm font-medium">Category</p>
 
                     <p className="mt-1 text-sm capitalize text-muted-foreground">
-                      {report.category.replaceAll(
-                        "_",
-                        " ",
-                      )}
+                      {report.category.replaceAll("_", " ")}
                     </p>
                   </div>
 
                   {/* Location */}
                   <button
                     type="button"
-                    onClick={() =>
-                      openLocation(
-                        report.latitude,
-                        report.longitude,
-                      )
-                    }
+                    onClick={() => openLocation(report.latitude, report.longitude)}
                     className="flex w-full items-start gap-3 rounded-xl bg-muted p-4 text-left transition hover:bg-muted/70"
                   >
                     <MapPin className="mt-0.5 size-5 shrink-0 text-primary" />
 
                     <div>
-                      <p className="text-sm font-medium">
-                        Report Location
-                      </p>
+                      <p className="text-sm font-medium">Report Location</p>
 
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {report.location_name ||
-                          report.address ||
-                          "Location not provided"}
+                        {report.location_name || report.address || "Location not provided"}
                       </p>
                     </div>
                   </button>
@@ -625,9 +490,7 @@ function AuthorityDashboard() {
                   {/* Description */}
                   {report.description && (
                     <div>
-                      <p className="text-sm font-medium">
-                        Citizen Description
-                      </p>
+                      <p className="text-sm font-medium">Citizen Description</p>
 
                       <p className="mt-1 text-sm leading-6 text-muted-foreground">
                         {report.description}
@@ -637,17 +500,12 @@ function AuthorityDashboard() {
 
                   {/* Status */}
                   <div className="space-y-2">
-                    <p className="text-sm font-medium">
-                      Update Report Status
-                    </p>
+                    <p className="text-sm font-medium">Update Report Status</p>
 
                     <select
                       value={report.status}
                       onChange={(event) =>
-                        updateStatus(
-                          report.id,
-                          event.target.value as ReportStatus,
-                        )
+                        updateStatus(report.id, event.target.value as ReportStatus)
                       }
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm capitalize"
                     >
@@ -656,9 +514,9 @@ function AuthorityDashboard() {
                           key={option.value}
                           value={option.value}
                           disabled={
-                            !allowedStatusTransitions[
-                              report.status as ReportStatus
-                            ]?.includes(option.value)
+                            !allowedStatusTransitions[report.status as ReportStatus]?.includes(
+                              option.value,
+                            )
                           }
                         >
                           {option.label}
@@ -667,9 +525,8 @@ function AuthorityDashboard() {
                     </select>
 
                     <p className="text-xs text-muted-foreground">
-                      Follow the workflow: Submitted → Verified →
-                      Assigned → In Progress → Completed. Rejected is
-                      available when the issue cannot be accepted or
+                      Follow the workflow: Submitted → Verified → Assigned → In Progress →
+                      Completed. Rejected is available when the issue cannot be accepted or
                       resolved.
                     </p>
                   </div>
@@ -679,9 +536,7 @@ function AuthorityDashboard() {
                     <div className="mb-3 flex items-center gap-2">
                       <Upload className="size-4 text-primary" />
 
-                      <p className="text-sm font-semibold">
-                        Resolution
-                      </p>
+                      <p className="text-sm font-semibold">Resolution</p>
                     </div>
 
                     {report.after_image_url ? (
@@ -724,37 +579,30 @@ function AuthorityDashboard() {
                           </div>
                         </div>
 
-                        <p className="text-xs font-medium text-green-600">
-                          Resolved
-                        </p>
+                        <p className="text-xs font-medium text-success">Resolved</p>
                       </div>
                     ) : (
                       <div>
                         <p className="mb-3 text-xs text-muted-foreground">
-                          Upload a photo after the issue has been resolved. This will mark the report as completed.
+                          Upload a photo after the issue has been resolved. This will mark the
+                          report as completed.
                         </p>
 
                         <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90">
                           <Upload className="mr-2 size-4" />
                           Upload Resolution Photo
-
                           <input
                             type="file"
                             accept="image/*"
                             className="hidden"
                             onChange={(event) => {
-                              const file =
-                                event.target.files?.[0];
+                              const file = event.target.files?.[0];
 
                               if (file) {
-                                uploadCleanupPhoto(
-                                  report.id,
-                                  file,
-                                );
+                                uploadCleanupPhoto(report.id, file);
                               }
 
-                              event.currentTarget.value =
-                                "";
+                              event.currentTarget.value = "";
                             }}
                           />
                         </label>
@@ -764,24 +612,16 @@ function AuthorityDashboard() {
 
                   {/* Resolved */}
                   {report.completed_at && (
-                    <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm">
-                      <CheckCircle2 className="size-4 text-green-600" />
+                    <div className="flex items-center gap-2 rounded-lg bg-success/10 p-3 text-sm">
+                      <CheckCircle2 className="size-4 text-success" />
 
                       <span>
-                        Resolved on{" "}
-                        {format(
-                          new Date(
-                            report.completed_at,
-                          ),
-                          "d MMM yyyy · HH:mm",
-                        )}
+                        Resolved on {format(new Date(report.completed_at), "d MMM yyyy · HH:mm")}
                       </span>
                     </div>
                   )}
 
-                  <p className="text-xs text-muted-foreground">
-                    Report ID: {report.id}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Report ID: {report.id}</p>
                 </div>
               </article>
             ))}

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Check } from "lucide-react";
-
+import { Link } from "@tanstack/react-router";
 import { SiteLayout } from "@/components/SiteLayout";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,10 +30,7 @@ function NotificationsPage() {
   });
 
   async function markAsRead(id: string) {
-    await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("id", id);
+    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
 
     refetch();
   }
@@ -43,9 +40,7 @@ function NotificationsPage() {
       <SiteLayout>
         <main className="mx-auto max-w-4xl px-4 py-16">
           <h1 className="text-3xl font-bold">Notifications</h1>
-          <p className="mt-3 text-muted-foreground">
-            Sign in to view your notifications.
-          </p>
+          <p className="mt-3 text-muted-foreground">Sign in to view your notifications.</p>
         </main>
       </SiteLayout>
     );
@@ -72,28 +67,41 @@ function NotificationsPage() {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`surface-card flex items-start justify-between gap-4 p-5 ${
-                  !notification.is_read ? "border-primary/40" : ""
+                className={`surface-card flex items-start justify-between gap-4 p-5 transition-shadow duration-200 hover:shadow-lift ${
+                  !notification.is_read ? "border-primary/40 bg-primary/[0.04]" : "opacity-80"
                 }`}
               >
-                <div>
-                  <h2 className="font-semibold">{notification.title}</h2>
+                <div className="min-w-0">
+                  {notification.report_id ? (
+                    <Link
+                      to="/my-reports"
+                      hash={`report-${notification.report_id}`}
+                      onClick={() => {
+                        if (!notification.is_read) void markAsRead(notification.id);
+                      }}
+                      className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <h2 className="font-semibold hover:text-primary">{notification.title}</h2>
 
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {notification.message}
-                  </p>
+                      <p className="mt-1 text-sm text-muted-foreground">{notification.message}</p>
 
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {new Date(notification.created_at).toLocaleString()}
-                  </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {new Date(notification.created_at).toLocaleString()}
+                      </p>
+                    </Link>
+                  ) : (
+                    <>
+                      <h2 className="font-semibold">{notification.title}</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">{notification.message}</p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {new Date(notification.created_at).toLocaleString()}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {!notification.is_read && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => markAsRead(notification.id)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => markAsRead(notification.id)}>
                     <Check className="mr-1 size-4" />
                     Read
                   </Button>

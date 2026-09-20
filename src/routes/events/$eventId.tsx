@@ -1,16 +1,34 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarDays, Camera, Loader2, MapPin, Navigation, Phone, Recycle, Trash2, Users } from "lucide-react";
+import {
+  CalendarDays,
+  Camera,
+  Loader2,
+  MapPin,
+  Navigation,
+  Pencil,
+  Phone,
+  Recycle,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SiteLayout } from "@/components/SiteLayout";
 import { CategoryChip } from "@/components/CategoryChip";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
@@ -32,9 +50,15 @@ export const Route = createFileRoute("/events/$eventId")({
   head: () => ({
     meta: [
       { title: "Clean-up event details — CleanSweep" },
-      { name: "description", content: "Event details, volunteer roster, waste logged, and before/after photos." },
+      {
+        name: "description",
+        content: "Event details, volunteer roster, waste logged, and before/after photos.",
+      },
       { property: "og:title", content: "Clean-up event details — CleanSweep" },
-      { property: "og:description", content: "See the roster, the waste collected, and the before/after photos." },
+      {
+        property: "og:description",
+        content: "See the roster, the waste collected, and the before/after photos.",
+      },
     ],
   }),
   component: EventDetail,
@@ -47,19 +71,30 @@ function EventDetail() {
   const navigate = useNavigate();
 
   const { data: event, isLoading } = useQuery(eventQuery(eventId));
-  const logs = useQuery(wasteLogsQuery(eventId));
-  const photos = useQuery(photosQuery(eventId));
+  const canManage = !!user && !!event && (event.organizer_id === user.id || isAdmin);
+  const logs = useQuery({
+    ...wasteLogsQuery(eventId),
+    enabled: canManage,
+  });
+  const photos = useQuery({
+    ...photosQuery(eventId),
+    enabled: canManage,
+  });
 
-  const volunteerIds = (event?.registrations ?? []).map((r) => r.volunteer_id);
-  const profiles = useQuery(profilesQuery(volunteerIds));
+  const profileIds = event
+    ? [
+        event.organizer_id,
+        ...(canManage ? (event.registrations ?? []).map((r) => r.volunteer_id) : []),
+      ]
+    : [];
+  const profiles = useQuery(profilesQuery([...new Set(profileIds)]));
   const signed = useQuery({
     queryKey: ["signed", eventId, (photos.data ?? []).map((p) => p.id).join(",")],
-    enabled: (photos.data?.length ?? 0) > 0,
+    enabled: canManage && (photos.data?.length ?? 0) > 0,
     queryFn: () => signPhotoUrls((photos.data ?? []).map((p) => p.url)),
   });
 
   const myReg = event?.registrations?.find((r) => r.volunteer_id === user?.id);
-  const canManage = !!user && !!event && (event.organizer_id === user.id || isAdmin);
   const signups = event?.registrations?.length ?? 0;
   const full = !!event && signups >= event.capacity;
 
@@ -72,7 +107,9 @@ function EventDetail() {
 
   const register = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("registrations").insert({ event_id: eventId, volunteer_id: user!.id });
+      const { error } = await supabase
+        .from("registrations")
+        .insert({ event_id: eventId, volunteer_id: user!.id });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -96,7 +133,11 @@ function EventDetail() {
 
   const setAttendance = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: "pending" | "attended" | "absent" }) => {
-      const { error } = await supabase.from("registrations").update({ attendance: value }).eq("id", id);
+      if (!canManage) throw new Error("You are not authorized to manage this event.");
+      const { error } = await supabase
+        .from("registrations")
+        .update({ attendance: value })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -111,6 +152,7 @@ function EventDetail() {
   const [notes, setNotes] = useState("");
   const addLog = useMutation({
     mutationFn: async () => {
+      if (!canManage) throw new Error("You are not authorized to manage this event.");
       const { error } = await supabase.from("waste_logs").insert({
         event_id: eventId,
         user_id: user!.id,
@@ -133,7 +175,10 @@ function EventDetail() {
 
   const [uploading, setUploading] = useState(false);
   const removePhoto = useMutation({
-    mutationFn: (photo: { id: string; url: string }) => deletePhoto(photo),
+    mutationFn: (photo: { id: string; url: string }) => {
+      if (!canManage) throw new Error("You are not authorized to manage this event.");
+      return deletePhoto(photo);
+    },
     onSuccess: () => {
       toast.success("Photo deleted.");
       qc.invalidateQueries({ queryKey: ["photos", eventId] });
@@ -142,7 +187,10 @@ function EventDetail() {
   });
 
   const removeEvent = useMutation({
-    mutationFn: () => deleteEvent(eventId),
+    mutationFn: () => {
+      if (!canManage) throw new Error("You are not authorized to delete this event.");
+      return deleteEvent(eventId);
+    },
     onSuccess: () => {
       toast.success("Event deleted.");
       qc.invalidateQueries({ queryKey: ["events"] });
@@ -152,7 +200,10 @@ function EventDetail() {
   });
 
   async function upload(kind: "before" | "after", file: File) {
-    if (!user) return;
+    if (!user || !canManage) {
+      toast.error("You are not authorized to manage this event.");
+      return;
+    }
     setUploading(true);
     const path = `${user.id}/${eventId}/${kind}-${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
     const { error } = await supabase.storage.from("event-photos").upload(path, file);
@@ -201,12 +252,26 @@ function EventDetail() {
     <SiteLayout>
       <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-12 lg:grid-cols-[1.6fr_1fr]">
         <div className="space-y-8">
-          <div>
+          {event.cover_url && (
+            <img
+              src={event.cover_url}
+              alt=""
+              className="h-64 w-full rounded-2xl object-cover shadow-2xl"
+            />
+          )}
+          <div className="surface-card p-6 sm:p-8">
             <div className="flex flex-wrap items-center gap-2">
               <Badge className="capitalize">{event.status}</Badge>
               <CategoryChip category={event.category} custom={event.category_other} />
             </div>
             <h1 className="mt-3 text-3xl font-bold">{event.title}</h1>
+            {canManage && (
+              <Button asChild variant="outline" className="mt-4">
+                <Link to="/events/edit/$eventId" params={{ eventId: event.id }}>
+                  <Pencil className="size-4" /> Edit Event
+                </Link>
+              </Button>
+            )}
             <div className="mt-4 space-y-2 text-sm text-muted-foreground">
               <p className="flex items-center gap-2">
                 <CalendarDays className="size-4 text-primary" />
@@ -224,164 +289,184 @@ function EventDetail() {
               </p>
             </div>
             <p className="mt-6 whitespace-pre-line text-sm leading-relaxed">{event.description}</p>
-            {CATEGORY_MAP[event.category]?.fields.some(
-              (f) => (event.details as Record<string, string>)?.[f.key],
-            ) && (
-              <dl className="surface-card mt-6 grid gap-4 p-5 sm:grid-cols-2">
-                {CATEGORY_MAP[event.category].fields
-                  .filter((f) => (event.details as Record<string, string>)[f.key])
-                  .map((f) => (
-                    <div key={f.key}>
-                      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{f.label}</dt>
-                      <dd className="mt-0.5 whitespace-pre-line text-sm">
-                        {(event.details as Record<string, string>)[f.key]}
-                      </dd>
-                    </div>
-                  ))}
-              </dl>
-            )}
+            {canManage &&
+              CATEGORY_MAP[event.category]?.fields.some(
+                (f) => (event.details as Record<string, string>)?.[f.key],
+              ) && (
+                <dl className="surface-card mt-6 grid gap-4 p-5 sm:grid-cols-2">
+                  {CATEGORY_MAP[event.category].fields
+                    .filter((f) => (event.details as Record<string, string>)[f.key])
+                    .map((f) => (
+                      <div key={f.key}>
+                        <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                          {f.label}
+                        </dt>
+                        <dd className="mt-0.5 whitespace-pre-line text-sm">
+                          {(event.details as Record<string, string>)[f.key]}
+                        </dd>
+                      </div>
+                    ))}
+                </dl>
+              )}
           </div>
 
-          <section className="surface-card p-5">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Recycle className="size-5 text-primary" /> Waste collected
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {totalWeight.toFixed(1)} kg across {totalBags} bags · {logs.data?.length ?? 0} log
-              {(logs.data?.length ?? 0) === 1 ? "" : "s"}
-            </p>
+          {canManage && (
+            <section className="surface-card p-5">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <Recycle className="size-5 text-primary" /> Waste collected
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {totalWeight.toFixed(1)} kg across {totalBags} bags · {logs.data?.length ?? 0} log
+                {(logs.data?.length ?? 0) === 1 ? "" : "s"}
+              </p>
 
-            {user && (
-              <form
-                className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  addLog.mutate();
-                }}
-              >
-                <div className="space-y-1.5">
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="bags">Bags</Label>
-                  <Input id="bags" type="number" min="0" value={bags} onChange={(e) => setBags(e.target.value)} />
-                </div>
-                <div className="flex items-end">
-                  <Button type="submit" disabled={addLog.isPending || (!weight && !bags)}>
-                    Log
-                  </Button>
-                </div>
-                <Textarea
-                  placeholder="Notes (optional)"
-                  className="sm:col-span-3"
-                  maxLength={500}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </form>
-            )}
-
-            <ul className="mt-5 divide-y divide-border text-sm">
-              {(logs.data ?? []).map((l) => (
-                <li key={l.id} className="flex items-start justify-between gap-4 py-2">
-                  <div>
-                    <p className="font-medium">{profiles.data?.[l.user_id]?.full_name ?? "Volunteer"}</p>
-                    {l.notes && <p className="text-muted-foreground">{l.notes}</p>}
-                  </div>
-                  <p className="shrink-0 text-muted-foreground">
-                    {Number(l.weight_kg).toFixed(1)} kg · {l.bags} bags
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="surface-card p-5">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <Camera className="size-5 text-primary" /> Before &amp; after
-            </h2>
-            {user && (
-              <div className="mt-4 flex flex-wrap gap-4">
-                {(["before", "after"] as const).map((kind) => (
-                  <div key={kind} className="space-y-1.5">
-                    <Label htmlFor={`file-${kind}`} className="capitalize">
-                      {kind} photo
-                    </Label>
+              {user && (
+                <form
+                  className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    addLog.mutate();
+                  }}
+                >
+                  <div className="space-y-1.5">
+                    <Label htmlFor="weight">Weight (kg)</Label>
                     <Input
-                      id={`file-${kind}`}
-                      type="file"
-                      accept="image/*"
-                      disabled={uploading}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) void upload(kind, file);
-                        e.target.value = "";
-                      }}
+                      id="weight"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
                     />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="bags">Bags</Label>
+                    <Input
+                      id="bags"
+                      type="number"
+                      min="0"
+                      value={bags}
+                      onChange={(e) => setBags(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Button type="submit" disabled={addLog.isPending || (!weight && !bags)}>
+                      Log
+                    </Button>
+                  </div>
+                  <Textarea
+                    placeholder="Notes (optional)"
+                    className="sm:col-span-3"
+                    maxLength={500}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                </form>
+              )}
+
+              <ul className="mt-5 divide-y divide-border text-sm">
+                {(logs.data ?? []).map((l) => (
+                  <li key={l.id} className="flex items-start justify-between gap-4 py-2">
+                    <div>
+                      <p className="font-medium">
+                        {profiles.data?.[l.user_id]?.full_name ?? "Volunteer"}
+                      </p>
+                      {l.notes && <p className="text-muted-foreground">{l.notes}</p>}
+                    </div>
+                    <p className="shrink-0 text-muted-foreground">
+                      {Number(l.weight_kg).toFixed(1)} kg · {l.bags} bags
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {canManage && (
+            <section className="surface-card p-5">
+              <h2 className="flex items-center gap-2 text-lg font-semibold">
+                <Camera className="size-5 text-primary" /> Before &amp; after
+              </h2>
+              {user && (
+                <div className="mt-4 flex flex-wrap gap-4">
+                  {(["before", "after"] as const).map((kind) => (
+                    <div key={kind} className="space-y-1.5">
+                      <Label htmlFor={`file-${kind}`} className="capitalize">
+                        {kind} photo
+                      </Label>
+                      <Input
+                        id={`file-${kind}`}
+                        type="file"
+                        accept="image/*"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) void upload(kind, file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                {(["before", "after"] as const).map((kind) => (
+                  <div key={kind}>
+                    <p className="mb-2 text-sm font-medium capitalize text-muted-foreground">
+                      {kind}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(photos.data ?? [])
+                        .filter((p) => p.kind === kind)
+                        .map((p) => (
+                          <div key={p.id} className="group relative">
+                            <img
+                              src={signed.data?.[p.url] ?? ""}
+                              alt={`${kind} photo from ${event.title}`}
+                              loading="lazy"
+                              className="aspect-square w-full rounded-lg border border-border object-cover"
+                            />
+                            {(isAdmin || p.user_id === user?.id) && (
+                              <ConfirmDelete
+                                title="Delete this photo?"
+                                description="The file will be removed from storage."
+                                confirmLabel="Delete photo"
+                                disabled={removePhoto.isPending}
+                                onConfirm={() => removePhoto.mutate({ id: p.id, url: p.url })}
+                                preview={
+                                  <img
+                                    src={signed.data?.[p.url] ?? ""}
+                                    alt="Photo to be deleted"
+                                    className="max-h-56 w-full rounded-lg object-contain"
+                                  />
+                                }
+                                trigger={
+                                  <Button
+                                    size="icon"
+                                    variant="destructive"
+                                    className="absolute right-1.5 top-1.5 size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </Button>
+                                }
+                              />
+                            )}
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {(["before", "after"] as const).map((kind) => (
-                <div key={kind}>
-                  <p className="mb-2 text-sm font-medium capitalize text-muted-foreground">{kind}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(photos.data ?? [])
-                      .filter((p) => p.kind === kind)
-                      .map((p) => (
-                        <div key={p.id} className="group relative">
-                          <img
-                            src={signed.data?.[p.url] ?? ""}
-                            alt={`${kind} photo from ${event.title}`}
-                            loading="lazy"
-                            className="aspect-square w-full rounded-lg border border-border object-cover"
-                          />
-                          {(isAdmin || p.user_id === user?.id) && (
-                            <ConfirmDelete
-                              title="Delete this photo?"
-                              description="The file will be removed from storage."
-                              confirmLabel="Delete photo"
-                              disabled={removePhoto.isPending}
-                              onConfirm={() => removePhoto.mutate({ id: p.id, url: p.url })}
-                              preview={
-                                <img
-                                  src={signed.data?.[p.url] ?? ""}
-                                  alt="Photo to be deleted"
-                                  className="max-h-56 w-full rounded-lg object-contain"
-                                />
-                              }
-                              trigger={
-                                <Button
-                                  size="icon"
-                                  variant="destructive"
-                                  className="absolute right-1.5 top-1.5 size-7 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                                >
-                                  <Trash2 className="size-3.5" />
-                                </Button>
-                              }
-                            />
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+            </section>
+          )}
         </div>
 
         <aside className="space-y-6">
           <div className="surface-card p-5">
-            <Progress value={Math.min(100, Math.round((signups / Math.max(1, event.capacity)) * 100))} className="h-2" />
+            <Progress
+              value={Math.min(100, Math.round((signups / Math.max(1, event.capacity)) * 100))}
+              className="h-2"
+            />
             <p className="mt-3 text-sm text-muted-foreground">
               {Math.max(0, event.capacity - signups)} spots remaining
             </p>
@@ -410,6 +495,34 @@ function EventDetail() {
           </div>
 
           <div className="surface-card p-5">
+            <div className="flex items-center gap-3 border-b border-border pb-4">
+              <Avatar className="size-11">
+                {profiles.data?.[event.organizer_id]?.avatar_url && (
+                  <AvatarImage
+                    src={profiles.data[event.organizer_id].avatar_url ?? undefined}
+                    alt=""
+                  />
+                )}
+                <AvatarFallback className="bg-primary/10 text-primary">
+                  {(profiles.data?.[event.organizer_id]?.full_name || "Organizer")
+                    .slice(0, 1)
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Organized by
+                </p>
+                <p className="font-semibold">
+                  {profiles.data?.[event.organizer_id]?.full_name || "CivicTrack organizer"}
+                </p>
+                {profiles.data?.[event.organizer_id]?.city && (
+                  <p className="text-sm text-muted-foreground">
+                    {profiles.data[event.organizer_id].city}
+                  </p>
+                )}
+              </div>
+            </div>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
               <MapPin className="size-5 text-primary" /> Location information
             </h2>
@@ -426,12 +539,16 @@ function EventDetail() {
               )}
               {event.landmark && (
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Landmark</dt>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Landmark
+                  </dt>
                   <dd>{event.landmark}</dd>
                 </div>
               )}
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Date &amp; time</dt>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Date &amp; time
+                </dt>
                 <dd>
                   {format(new Date(event.starts_at), "EEE d MMM yyyy · HH:mm")}
                   {event.ends_at ? ` – ${format(new Date(event.ends_at), "HH:mm")}` : ""}
@@ -439,11 +556,16 @@ function EventDetail() {
               </div>
               {(event.contact_name || event.contact_phone) && (
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">Contact person</dt>
+                  <dt className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Contact person
+                  </dt>
                   <dd className="flex items-center gap-2">
                     {event.contact_name}
                     {event.contact_phone && (
-                      <a href={`tel:${event.contact_phone}`} className="flex items-center gap-1 text-primary">
+                      <a
+                        href={`tel:${event.contact_phone}`}
+                        className="flex items-center gap-1 text-primary"
+                      >
                         <Phone className="size-3.5" /> {event.contact_phone}
                       </a>
                     )}
@@ -488,40 +610,45 @@ function EventDetail() {
           <DonationBanner />
           <UpcomingEventsBanner limit={3} />
 
-          <div className="surface-card p-5">
-            <h2 className="text-lg font-semibold">Volunteers</h2>
-            <ul className="mt-3 space-y-3 text-sm">
-              {(event.registrations ?? []).map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3">
-                  <span>{profiles.data?.[r.volunteer_id]?.full_name ?? "Volunteer"}</span>
-                  {canManage ? (
-                    <Select
-                      value={r.attendance}
-                      onValueChange={(v) =>
-                        setAttendance.mutate({ id: r.id, value: v as "pending" | "attended" | "absent" })
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="attended">Attended</SelectItem>
-                        <SelectItem value="absent">Absent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge variant="secondary" className="capitalize">
-                      {r.attendance}
-                    </Badge>
-                  )}
-                </li>
-              ))}
-              {(event.registrations?.length ?? 0) === 0 && (
-                <li className="text-muted-foreground">No volunteers yet — be the first.</li>
-              )}
-            </ul>
-          </div>
+          {canManage && (
+            <div className="surface-card p-5">
+              <h2 className="text-lg font-semibold">Volunteers</h2>
+              <ul className="mt-3 space-y-3 text-sm">
+                {(event.registrations ?? []).map((r) => (
+                  <li key={r.id} className="flex items-center justify-between gap-3">
+                    <span>{profiles.data?.[r.volunteer_id]?.full_name ?? "Volunteer"}</span>
+                    {canManage ? (
+                      <Select
+                        value={r.attendance}
+                        onValueChange={(v) =>
+                          setAttendance.mutate({
+                            id: r.id,
+                            value: v as "pending" | "attended" | "absent",
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="attended">Attended</SelectItem>
+                          <SelectItem value="absent">Absent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="secondary" className="capitalize">
+                        {r.attendance}
+                      </Badge>
+                    )}
+                  </li>
+                ))}
+                {(event.registrations?.length ?? 0) === 0 && (
+                  <li className="text-muted-foreground">No volunteers yet — be the first.</li>
+                )}
+              </ul>
+            </div>
+          )}
         </aside>
       </div>
     </SiteLayout>

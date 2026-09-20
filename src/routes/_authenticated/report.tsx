@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowLeft,
   Camera,
@@ -7,6 +7,7 @@ import {
   FileText,
   ImagePlus,
   MapPin,
+  TriangleAlert,
   Send,
   Trash2,
   Upload,
@@ -19,26 +20,30 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import {ReportLocationMap} from "@/components/ReportLocationMap";
+import {
+  detectIssueCategory,
+  findPossibleMatches,
+  reportImageUrl,
+  type DetectionResult,
+  type PossibleMatch,
+  type ReportCategory,
+} from "@/lib/issue-matching";
 
 export const Route = createFileRoute("/_authenticated/report")({
   component: ReportGarbage,
 });
 
-type ReportCategory =
-  | "streetlight"
-  | "pothole"
-  | "garbage"
-  | "drainage"
-  | "traffic"
-  | "infrastructure"
-  | "illegal_dumping"
-  | "other"
-  | "";
-
 const categories: {
-  value: ReportCategory;
+  value: Exclude<ReportCategory, "">;
   icon: string;
   title: string;
   description: string;
@@ -93,11 +98,32 @@ const categories: {
   },
 ];
 
+function finalDescriptionForMatching(
+  description: string,
+  category: ReportCategory,
+  otherCategory: string,
+) {
+  return category === "other" && otherCategory.trim()
+    ? `${otherCategory.trim()}${description.trim() ? ` ${description.trim()}` : ""}`
+    : description.trim();
+}
+
+function categoryLabel(category: ReportCategory) {
+  return (
+    categories
+      .find((item) => item.value === category)
+      ?.title.replace(" / Damaged Road", "") ??
+    category.replaceAll("_", " ")
+  );
+}
+
 function ReportGarbage() {
   const navigate = useNavigate();
+  const formRef = useRef<HTMLFormElement>(null);
+  const skipMatchingRef = useRef(false);
 
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<ReportCategory>("");
+  const [category, setCategory] = useState<ReportCategory | "">("");
   const [otherCategory, setOtherCategory] = useState("");
 
   const [location, setLocation] = useState("");
@@ -108,10 +134,19 @@ function ReportGarbage() {
 
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [detection, setDetection] = useState<DetectionResult | null>(null);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [detectionFailed, setDetectionFailed] = useState(false);
+  const [possibleMatches, setPossibleMatches] = useState<
+    PossibleMatch[]
+  >([]);
+  const [selectedMatch, setSelectedMatch] =
+    useState<PossibleMatch | null>(null);
+  const [showMatches, setShowMatches] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  function handlePhotoChange(file: File | null) {
+  async function handlePhotoChange(file: File | null) {
     if (!file) {
       return;
     }
@@ -130,6 +165,19 @@ function ReportGarbage() {
 
     const previewUrl = URL.createObjectURL(file);
     setPhotoPreview(previewUrl);
+    setDetection(null);
+    setDetectionFailed(false);
+    setIsDetecting(true);
+
+    try {
+      const result = await detectIssueCategory(file);
+      setDetection(result);
+    } catch (error) {
+      console.error(error);
+      setDetectionFailed(true);
+    } finally {
+      setIsDetecting(false);
+    }
   }
 
   function removePhoto() {
@@ -139,6 +187,8 @@ function ReportGarbage() {
 
     setPhoto(null);
     setPhotoPreview(null);
+    setDetection(null);
+    setDetectionFailed(false);
   }
 
   function handleLocationSelect(
@@ -196,6 +246,33 @@ function ReportGarbage() {
         });
         return;
       }
+
+      if (!skipMatchingRef.current) {
+        try {
+          const matches = await findPossibleMatches({
+            category,
+            description: finalDescriptionForMatching(
+              description,
+              category,
+              otherCategory,
+            ),
+            latitude,
+            longitude,
+          });
+
+          if (matches.length > 0) {
+            setPossibleMatches(matches);
+            setShowMatches(true);
+            return;
+          }
+        } catch (error) {
+          console.error(error);
+          toast.warning(
+            "We could not check for existing reports, so you can continue submitting.",
+          );
+        }
+      }
+      skipMatchingRef.current = false;
 
       const fileExtension =
         photo.name.split(".").pop()?.toLowerCase() || "jpg";
@@ -302,6 +379,8 @@ function ReportGarbage() {
                 setLongitude(null);
                 setPlaceId("");
                 removePhoto();
+                setPossibleMatches([]);
+                setShowMatches(false);
               }}
             >
               Report Another Issue
@@ -379,6 +458,7 @@ function ReportGarbage() {
         </section>
 
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
           className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10"
         >
@@ -592,6 +672,49 @@ function ReportGarbage() {
                     </div>
                   </div>
                 )}
+
+                {(isDetecting || detection || detectionFailed) && (
+                  <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                    {isDetecting && (
+                      <p className="text-sm text-muted-foreground">
+                        Checking the image for a likely issue category...
+                      </p>
+                    )}
+
+                    {detection && (
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-medium">
+                            Suggested category:{" "}
+                            <span className="text-primary">
+                              {categoryLabel(detection.category)}
+                            </span>
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Model confidence:{" "}
+                            {Math.round(detection.confidence * 100)}%. Confirm
+                            or choose another category above.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => setCategory(detection.category)}
+                        >
+                          Confirm suggestion
+                        </Button>
+                      </div>
+                    )}
+
+                    {detectionFailed && !detection && (
+                      <p className="text-sm text-muted-foreground">
+                        Image detection is unavailable right now. Please
+                        choose the category manually; your report can still be
+                        submitted.
+                      </p>
+                    )}
+                  </div>
+                )}
               </section>
             </div>
 
@@ -698,7 +821,121 @@ function ReportGarbage() {
               </section>
             </div>
           </div>
-                        </form>
+        </form>
+
+        <Dialog open={showMatches} onOpenChange={setShowMatches}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto border-white/10 bg-card/95 backdrop-blur-xl sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <TriangleAlert className="h-5 w-5 text-amber-400" />
+                Possible existing report
+              </DialogTitle>
+              <DialogDescription>
+                We found reports that may describe the same civic issue. This
+                is only a suggestion; your report will never be rejected
+                automatically.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-3">
+              {possibleMatches.map((match) => (
+                <button
+                  key={match.id}
+                  type="button"
+                  onClick={() => setSelectedMatch(match)}
+                  className="flex w-full gap-4 rounded-2xl border border-white/10 bg-background/30 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                >
+                  {match.before_image_url && (
+                    <img
+                      src={reportImageUrl(match.before_image_url) ?? undefined}
+                      alt=""
+                      className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                    />
+                  )}
+                  <span className="min-w-0">
+                    <span className="block font-semibold">
+                      CT-{match.id.slice(0, 8).toUpperCase()}
+                    </span>
+                    <span className="mt-1 block text-sm">
+                      {categoryLabel(match.category)}
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {match.distanceMeters === null
+                        ? "Nearby"
+                        : `${Math.round(match.distanceMeters)} m away`}{" "}
+                      · {match.status.replaceAll("_", " ")} ·{" "}
+                      {format(new Date(match.created_at), "d MMM yyyy")}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowMatches(false);
+                  skipMatchingRef.current = true;
+                  formRef.current?.requestSubmit();
+                }}
+              >
+                This Is a Different Issue
+              </Button>
+              <Button
+                type="button"
+                disabled={!selectedMatch}
+                onClick={() => {
+                  if (selectedMatch) {
+                    setShowMatches(false);
+                  }
+                }}
+              >
+                View Existing Report
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={selectedMatch !== null}
+          onOpenChange={(open) => {
+            if (!open) setSelectedMatch(null);
+          }}
+        >
+          <DialogContent className="border-white/10 bg-card/95 backdrop-blur-xl">
+            {selectedMatch && (
+              <>
+                <DialogHeader>
+                  <DialogTitle>
+                    Report CT-{selectedMatch.id.slice(0, 8).toUpperCase()}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {categoryLabel(selectedMatch.category)} ·{" "}
+                    {selectedMatch.status.replaceAll("_", " ")}
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedMatch.before_image_url && (
+                  <img
+                    src={reportImageUrl(selectedMatch.before_image_url) ?? undefined}
+                    alt="Existing civic issue"
+                    className="max-h-72 w-full rounded-xl object-cover"
+                  />
+                )}
+                <p className="text-sm leading-6 text-muted-foreground">
+                  {selectedMatch.description || "No description provided."}
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => setSelectedMatch(null)}
+                >
+                  Back to possible reports
+                </Button>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </>
     )}
   </div>
