@@ -58,6 +58,29 @@ const allowedStatusTransitions: Record<ReportStatus, ReportStatus[]> = {
   rejected: ["rejected", "submitted"],
 };
 
+async function notifyReportOwnerOfStatusChange(
+  reportId: string,
+  userId: string,
+  status: ReportStatus,
+) {
+  try {
+    const { error } = await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Report status updated",
+      message: `The status of your report has been updated to ${status.replaceAll("_", " ")}.`,
+      report_id: reportId,
+      is_read: false,
+    });
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error(error);
+    toast.warning("Report status updated, but the notification could not be sent.");
+  }
+}
+
 function AuthorityDashboard() {
   const { user, isAuthority, loading } = useAuth();
   const queryClient = useQueryClient();
@@ -150,6 +173,10 @@ function AuthorityDashboard() {
       return;
     }
 
+    if (currentReport.status === newStatus) {
+      return;
+    }
+
     const updateData: {
       status: ReportStatus;
       completed_at?: string | null;
@@ -160,13 +187,28 @@ function AuthorityDashboard() {
     updateData.completed_at =
       newStatus === "completed" ? (currentReport.completed_at ?? new Date().toISOString()) : null;
 
-    const { error } = await supabase.from("reports").update(updateData).eq("id", reportId);
+    const { data: updatedReports, error } = await supabase
+      .from("reports")
+      .update(updateData)
+      .eq("id", reportId)
+      .eq("status", currentReport.status)
+      .select("id");
 
     if (error) {
       console.error(error);
       toast.error("Could not update the report status.");
       return;
     }
+
+    if (!updatedReports?.length) {
+      toast.error("The report status changed elsewhere. Please try again.");
+      await queryClient.invalidateQueries({
+        queryKey: ["authority-reports"],
+      });
+      return;
+    }
+
+    await notifyReportOwnerOfStatusChange(reportId, currentReport.user_id, newStatus);
 
     toast.success(`Report marked as ${newStatus.replaceAll("_", " ")}.`);
 
@@ -177,6 +219,12 @@ function AuthorityDashboard() {
 
   const uploadCleanupPhoto = async (reportId: string, file: File) => {
     try {
+      const currentReport = reports.data?.find((report) => report.id === reportId);
+      if (!currentReport) {
+        toast.error("Could not find the report to update.");
+        return;
+      }
+
       const fileExtension = file.name.split(".").pop()?.toLowerCase() || "jpg";
 
       const fileName = `cleanup/after-${reportId}-${Date.now()}.${fileExtension}`;
@@ -194,19 +242,33 @@ function AuthorityDashboard() {
         return;
       }
 
-      const { error: updateError } = await supabase
+      const { data: updatedReports, error: updateError } = await supabase
         .from("reports")
         .update({
           after_image_url: fileName,
           status: "completed",
           completed_at: new Date().toISOString(),
         })
-        .eq("id", reportId);
+        .eq("id", reportId)
+        .eq("status", currentReport.status)
+        .select("id");
 
       if (updateError) {
         console.error(updateError);
         toast.error("Photo uploaded, but the report could not be completed.");
         return;
+      }
+
+      if (!updatedReports?.length) {
+        toast.error("Photo uploaded, but the report status changed before the update.");
+        await queryClient.invalidateQueries({
+          queryKey: ["authority-reports"],
+        });
+        return;
+      }
+
+      if (currentReport.status !== "completed") {
+        await notifyReportOwnerOfStatusChange(reportId, currentReport.user_id, "completed");
       }
 
       toast.success("Resolution photo uploaded and report completed.");

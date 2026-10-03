@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
+import { format } from "date-fns";
 import {
   ArrowLeft,
   Camera,
@@ -117,6 +118,22 @@ function categoryLabel(category: ReportCategory) {
   );
 }
 
+function matchLocationLabel(match: PossibleMatch) {
+  if (match.location_name?.trim()) {
+    return match.location_name;
+  }
+
+  if (match.address?.trim()) {
+    return match.address;
+  }
+
+  if (match.latitude !== null && match.longitude !== null) {
+    return `${match.latitude.toFixed(5)}, ${match.longitude.toFixed(5)}`;
+  }
+
+  return "Location unavailable";
+}
+
 function ReportGarbage() {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
@@ -142,6 +159,7 @@ function ReportGarbage() {
   >([]);
   const [selectedMatch, setSelectedMatch] =
     useState<PossibleMatch | null>(null);
+  const [showSelectedMatch, setShowSelectedMatch] = useState(false);
   const [showMatches, setShowMatches] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -828,12 +846,12 @@ function ReportGarbage() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <TriangleAlert className="h-5 w-5 text-amber-400" />
-                Possible existing report
+                Possible duplicate report
               </DialogTitle>
               <DialogDescription>
-                We found reports that may describe the same civic issue. This
-                is only a suggestion; your report will never be rejected
-                automatically.
+                We found reports that may describe the same civic issue. Review
+                a possible match or continue if this is a different issue. Your
+                report will never be rejected automatically.
               </DialogDescription>
             </DialogHeader>
 
@@ -857,13 +875,16 @@ function ReportGarbage() {
                       CT-{match.id.slice(0, 8).toUpperCase()}
                     </span>
                     <span className="mt-1 block text-sm">
-                      {categoryLabel(match.category)}
+                      Category: {categoryLabel(match.category)}
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Location: {matchLocationLabel(match)}
                     </span>
                     <span className="mt-1 block text-xs text-muted-foreground">
                       {match.distanceMeters === null
                         ? "Nearby"
                         : `${Math.round(match.distanceMeters)} m away`}{" "}
-                      · {match.status.replaceAll("_", " ")} ·{" "}
+                      · Status: {match.status.replaceAll("_", " ")} ·{" "}
                       {format(new Date(match.created_at), "d MMM yyyy")}
                     </span>
                   </span>
@@ -881,7 +902,7 @@ function ReportGarbage() {
                   formRef.current?.requestSubmit();
                 }}
               >
-                This Is a Different Issue
+                Continue anyway (this is a different issue)
               </Button>
               <Button
                 type="button"
@@ -889,19 +910,23 @@ function ReportGarbage() {
                 onClick={() => {
                   if (selectedMatch) {
                     setShowMatches(false);
+                    setShowSelectedMatch(true);
                   }
                 }}
               >
-                View Existing Report
+                View existing report
               </Button>
             </div>
           </DialogContent>
         </Dialog>
 
         <Dialog
-          open={selectedMatch !== null}
+          open={showSelectedMatch}
           onOpenChange={(open) => {
-            if (!open) setSelectedMatch(null);
+            if (!open) {
+              setShowSelectedMatch(false);
+              setSelectedMatch(null);
+            }
           }}
         >
           <DialogContent className="border-white/10 bg-card/95 backdrop-blur-xl">
@@ -912,10 +937,13 @@ function ReportGarbage() {
                     Report CT-{selectedMatch.id.slice(0, 8).toUpperCase()}
                   </DialogTitle>
                   <DialogDescription>
-                    {categoryLabel(selectedMatch.category)} ·{" "}
+                    Category: {categoryLabel(selectedMatch.category)} · Status:{" "}
                     {selectedMatch.status.replaceAll("_", " ")}
                   </DialogDescription>
                 </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Location: {matchLocationLabel(selectedMatch)}
+                </p>
                 {selectedMatch.before_image_url && (
                   <img
                     src={reportImageUrl(selectedMatch.before_image_url) ?? undefined}
@@ -928,7 +956,10 @@ function ReportGarbage() {
                 </p>
                 <Button
                   type="button"
-                  onClick={() => setSelectedMatch(null)}
+                  onClick={() => {
+                    setShowSelectedMatch(false);
+                    setShowMatches(true);
+                  }}
                 >
                   Back to possible reports
                 </Button>

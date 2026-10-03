@@ -39,3 +39,8 @@ dist-ssr
 
 supabase/.temp/
 .env*
+# CivicTrack AI dataset
+ai-model/dataset/
+
+# CivicTrack AI Python environment
+ai-model/.venv/
