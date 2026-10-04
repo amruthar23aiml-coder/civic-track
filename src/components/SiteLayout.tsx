@@ -28,7 +28,7 @@ import { useTheme, type ThemeMode } from "@/hooks/useTheme";
 type NavItem = { to: string; label: string; icon: LucideIcon };
 
 const PUBLIC_NAV: NavItem[] = [
-  { to: "/events", label: "Events", icon: CalendarDays },
+  { to: "/events", label: "Initiatives", icon: CalendarDays },
   { to: "/reports", label: "Reports", icon: FileText },
   { to: "/donate", label: "Donate", icon: HeartHandshake },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
@@ -38,15 +38,15 @@ const VOLUNTEER_NAV: NavItem[] = [
   { to: "/dashboard", label: "My Activity", icon: BarChart3 },
   { to: "/report", label: "Report Issue", icon: FileText },
   { to: "/my-reports", label: "My Reports", icon: FileText },
-  { to: "/reports", label: "Community", icon: FileText },
-  { to: "/events", label: "Events", icon: CalendarDays },
+  { to: "/reports", label: "Community Reports", icon: FileText },
+  { to: "/events", label: "Initiatives", icon: CalendarDays },
   { to: "/donate", label: "Donate", icon: HeartHandshake },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
 
 const ORGANIZER_NAV: NavItem[] = [
   { to: "/dashboard", label: "My Activity", icon: BarChart3 },
-  { to: "/events", label: "Events", icon: CalendarDays },
+  { to: "/events", label: "Initiatives", icon: CalendarDays },
   { to: "/donate", label: "Donate", icon: HeartHandshake },
   { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
 ];
@@ -55,7 +55,7 @@ const AUTHORITY_NAV: NavItem[] = [{ to: "/authority", label: "Reports", icon: Sh
 
 const ADMIN_NAV: NavItem[] = [
   { to: "/admin", label: "Overview", icon: ShieldCheck },
-  { to: "/admin/events", label: "Events", icon: CalendarDays },
+  { to: "/admin/events", label: "Initiatives", icon: CalendarDays },
   { to: "/admin/volunteers", label: "Volunteers", icon: Users },
   { to: "/admin/announcements", label: "Announcements", icon: Megaphone },
 ];
@@ -92,6 +92,25 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
         : resolved === "volunteer"
           ? VOLUNTEER_NAV
           : PUBLIC_NAV;
+  const navItems = [...nav];
+
+  if (
+    user &&
+    !isAdminShell &&
+    !isAuthorityShell &&
+    !navItems.some((item) => item.to === "/dashboard")
+  ) {
+    navItems.push({ to: "/dashboard", label: "My Activity", icon: BarChart3 });
+  }
+  if (isOrganizer) {
+    navItems.push({ to: "/events/new", label: "Create initiative", icon: CalendarPlus });
+  }
+  if (isAdmin && !isAdminShell) {
+    navItems.push({ to: "/admin", label: "Admin", icon: ShieldCheck });
+  }
+  if (isAdminShell) {
+    navItems.push({ to: "/", label: "Public site", icon: Leaf });
+  }
 
   return (
     <div
@@ -108,8 +127,11 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
             : "border-border/70 bg-background/85",
         )}
       >
-        <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center gap-3 px-4 sm:gap-5">
-          <Link to={isAdminShell ? "/admin" : "/"} className="group flex items-center gap-2">
+        <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center gap-4 px-4">
+          <Link
+            to={isAdminShell ? "/admin" : "/"}
+            className="group flex shrink-0 items-center gap-2"
+          >
             <span
               className={cn(
                 "flex size-9 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-[-6deg]",
@@ -128,12 +150,12 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
             </span>
           </Link>
           <nav className="hidden min-w-0 flex-1 items-center justify-center gap-0.5 xl:flex">
-            {nav.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium whitespace-nowrap transition-colors lg:px-3",
+                  "flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-2 text-sm font-medium whitespace-nowrap transition-colors",
                   isAdminShell
                     ? "opacity-80 hover:bg-background/15 hover:opacity-100"
                     : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground",
@@ -204,31 +226,8 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
                 </div>
               )}
             </div>
-            {isAdmin && !isAdminShell && (
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="border-primary/35 hover:border-primary/70"
-              >
-                <Link to="/admin">Admin</Link>
-              </Button>
-            )}
-            {isAdminShell && (
-              <Button asChild variant="ghost" size="sm" className="hover:bg-background/15">
-                <Link to="/">Public site</Link>
-              </Button>
-            )}
             {user ? (
               <>
-                {!isAdminShell && !isAuthorityShell && (
-                  <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-                    <Link to={isOrganizer ? "/events/new" : "/dashboard"}>
-                      {isOrganizer ? "Create initiative" : "My activity"}
-                    </Link>
-                  </Button>
-                )}
-
                 <Button
                   variant="ghost"
                   size="sm"
@@ -264,7 +263,7 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
         </div>
         <div className={cn("border-t xl:hidden", open ? "block" : "hidden")}>
           <div className="mx-auto flex max-w-6xl flex-col px-4 py-2">
-            {nav.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}

@@ -44,3 +44,6 @@ ai-model/dataset/
 
 # CivicTrack AI Python environment
 ai-model/.venv/
+# Python generated files
+__pycache__/
+*.pyc

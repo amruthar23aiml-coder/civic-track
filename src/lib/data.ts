@@ -95,6 +95,21 @@ export const leaderboardQuery = () => ({
   },
 });
 
+export type ImpactLeaderboardPeriod = "this_month" | "all_time";
+export type ImpactLeaderboardRow =
+  Database["public"]["Functions"]["civic_impact_leaderboard"]["Returns"][number];
+
+export const impactLeaderboardQuery = (period: ImpactLeaderboardPeriod) => ({
+  queryKey: ["impact-leaderboard", period],
+  queryFn: async (): Promise<ImpactLeaderboardRow[]> => {
+    const { data, error } = await supabase.rpc("civic_impact_leaderboard", {
+      _period: period,
+    });
+    if (error) throw error;
+    return data ?? [];
+  },
+});
+
 export const statsQuery = () => ({
   queryKey: ["platform-stats"],
   queryFn: async () => {

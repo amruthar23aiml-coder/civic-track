@@ -424,6 +424,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      civic_impact_leaderboard: {
+        Args: { _period?: string }
+        Returns: {
+          avatar_url: string | null
+          city: string | null
+          full_name: string
+          impact_points: number
+          initiatives_completed: number
+          issues_resolved: number
+          rank_position: number
+          user_id: string
+          verified_reports: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
