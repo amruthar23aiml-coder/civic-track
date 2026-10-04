@@ -2,16 +2,30 @@ from pathlib import Path
 
 import torch
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+
+
 from PIL import Image
 from torch import nn
 from torchvision.models import MobileNet_V3_Small_Weights, mobilenet_v3_small
+
+app = FastAPI(title="CivicTrack AI API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://civic-track-murex.vercel.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKPOINT_PATH = ROOT / "artifacts" / "civictrack_mobilenetv3_small.pt"
 
 CLASSES = ("garbage", "illegal_dumping", "pothole", "streetlight")
 
-app = FastAPI(title="CivicTrack AI API")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
