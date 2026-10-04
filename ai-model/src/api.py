@@ -61,7 +61,7 @@ def load_model():
     return model
 
 
-model = load_model()
+model = None
 image_transform = MobileNet_V3_Small_Weights.DEFAULT.transforms()
 
 
@@ -90,6 +90,12 @@ async def predict(image: UploadFile = File(...)):
 
         with Image.open(BytesIO(image_bytes)) as source:
             pil_image = source.convert("RGB")
+        
+
+        global model
+
+        if model is None:
+            model = load_model()
 
         tensor = image_transform(pil_image).unsqueeze(0).to(device)
 
