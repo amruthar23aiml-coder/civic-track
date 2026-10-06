@@ -196,7 +196,7 @@ function ReportGarbage() {
         new Promise<never>((_, reject) => {
           timeoutId = setTimeout(
             () => reject(new Error("Image analysis timed out")),
-            15_000,
+            45_000,
           );
         }),
       ]);
