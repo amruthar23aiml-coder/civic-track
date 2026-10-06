@@ -189,14 +189,14 @@ function EditEvent() {
 
   return (
     <SiteLayout>
-      <main className="min-h-screen bg-[#080c0a] text-white">
+      <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
           <div className="mb-8 max-w-3xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#00d084]/20 bg-[#00d084]/10 px-3 py-1 text-xs font-medium text-[#39ff14]">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <CalendarDays className="size-3.5" /> Community event
             </div>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Edit event</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55 sm:text-base">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
               Update the details participants will see for this event.
             </p>
           </div>
@@ -209,10 +209,10 @@ function EditEvent() {
             className="grid gap-6 lg:grid-cols-[1fr_360px]"
           >
             <div className="space-y-6">
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold">Event information</h2>
-                  <p className="mt-1 text-sm text-white/45">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Tell people what this event is about.
                   </p>
                 </div>
@@ -223,7 +223,7 @@ function EditEvent() {
                       value={category}
                       onValueChange={(value) => setCategory(value as EventCategory)}
                     >
-                      <SelectTrigger className="h-11 border-white/10 bg-black/20">
+                      <SelectTrigger className="h-11 border-input bg-background/50">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="max-h-80">
@@ -252,7 +252,7 @@ function EditEvent() {
                         maxLength={80}
                         value={categoryOther}
                         onChange={(e) => setCategoryOther(e.target.value)}
-                        className="h-11 border-white/10 bg-black/20"
+                        className="h-11 border-input bg-background/50"
                       />
                     </div>
                   )}
@@ -264,7 +264,7 @@ function EditEvent() {
                       maxLength={120}
                       value={form.title}
                       onChange={set("title")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                   <div className="space-y-2">
@@ -276,7 +276,7 @@ function EditEvent() {
                       maxLength={2000}
                       value={form.description}
                       onChange={set("description")}
-                      className="resize-none border-white/10 bg-black/20"
+                      className="resize-none border-input bg-background/50"
                     />
                   </div>
                   {def.fields.map((field) => (
@@ -289,7 +289,7 @@ function EditEvent() {
                           onChange={(e) =>
                             setDetails((current) => ({ ...current, [field.key]: e.target.value }))
                           }
-                          className="resize-none border-white/10 bg-black/20"
+                          className="resize-none border-input bg-background/50"
                         />
                       ) : field.type === "select" ? (
                         <Select
@@ -298,7 +298,7 @@ function EditEvent() {
                             setDetails((current) => ({ ...current, [field.key]: value }))
                           }
                         >
-                          <SelectTrigger className="h-11 border-white/10 bg-black/20">
+                          <SelectTrigger className="h-11 border-input bg-background/50">
                             <SelectValue placeholder={field.label} />
                           </SelectTrigger>
                           <SelectContent>
@@ -317,7 +317,7 @@ function EditEvent() {
                           onChange={(e) =>
                             setDetails((current) => ({ ...current, [field.key]: e.target.value }))
                           }
-                          className="h-11 border-white/10 bg-black/20"
+                          className="h-11 border-input bg-background/50"
                         />
                       )}
                     </div>
@@ -325,19 +325,19 @@ function EditEvent() {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <div className="mb-5">
                   <h2 className="text-lg font-semibold">Event cover image</h2>
-                  <p className="mt-1 text-sm text-white/45">Replace the image if needed.</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Replace the image if needed.</p>
                 </div>
                 {!imagePreview ? (
                   <label
                     htmlFor="cover-image"
-                    className="group flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 px-6 text-center transition hover:border-[#00d084]/50 hover:bg-[#00d084]/5"
+                    className="group flex min-h-[180px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/50 px-6 text-center transition hover:border-primary/40 hover:bg-primary/5"
                   >
-                    <ImagePlus className="mb-4 size-7 text-[#00d084]" />
+                    <ImagePlus className="mb-4 size-7 text-primary" />
                     <p className="font-medium">Upload event image</p>
-                    <p className="mt-1 text-xs text-white/40">JPG, PNG or WEBP · up to 5 MB</p>
+                    <p className="mt-1 text-xs text-muted-foreground">JPG, PNG or WEBP · up to 5 MB</p>
                     <input
                       id="cover-image"
                       type="file"
@@ -353,7 +353,7 @@ function EditEvent() {
                     />
                   </label>
                 ) : (
-                  <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
+                  <div className="relative overflow-hidden rounded-2xl border border-border bg-background">
                     <img
                       src={imagePreview}
                       alt="Event cover preview"
@@ -365,7 +365,7 @@ function EditEvent() {
                         setCoverImage(null);
                         setImagePreview(null);
                       }}
-                      className="absolute right-3 top-3 inline-flex items-center gap-2 rounded-lg bg-black/60 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-red-500/80"
+                      className="absolute right-3 top-3 inline-flex items-center gap-2 rounded-lg bg-destructive/85 px-3 py-2 text-xs font-medium text-destructive-foreground backdrop-blur transition hover:bg-destructive"
                     >
                       <X className="size-4" /> Remove
                     </button>
@@ -375,9 +375,9 @@ function EditEvent() {
             </div>
 
             <div className="space-y-6">
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <MapPin className="size-5 text-[#00d084]" /> Event location
+                  <MapPin className="size-5 text-primary" /> Event location
                 </h2>
                 <div className="mt-5 space-y-5">
                   <div className="space-y-2">
@@ -387,7 +387,7 @@ function EditEvent() {
                       required
                       value={form.location_name}
                       onChange={set("location_name")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                   <div className="space-y-2">
@@ -396,7 +396,7 @@ function EditEvent() {
                       id="address"
                       value={form.address}
                       onChange={set("address")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                   <div className="space-y-2">
@@ -405,7 +405,7 @@ function EditEvent() {
                       id="landmark"
                       value={form.landmark}
                       onChange={set("landmark")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                   <ReportLocationMap
@@ -419,9 +419,9 @@ function EditEvent() {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <CalendarDays className="size-5 text-[#00d084]" /> Schedule and capacity
+                  <CalendarDays className="size-5 text-primary" /> Schedule and capacity
                 </h2>
                 <div className="mt-5 space-y-5">
                   <div className="space-y-2">
@@ -432,7 +432,7 @@ function EditEvent() {
                       type="datetime-local"
                       value={form.starts_at}
                       onChange={set("starts_at")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                   <div className="space-y-2">
@@ -442,7 +442,7 @@ function EditEvent() {
                       type="datetime-local"
                       value={form.ends_at}
                       onChange={set("ends_at")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                   <div className="space-y-2">
@@ -454,15 +454,15 @@ function EditEvent() {
                       max="1000"
                       value={form.capacity}
                       onChange={set("capacity")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <h2 className="flex items-center gap-2 text-lg font-semibold">
-                  <Phone className="size-5 text-[#00d084]" /> Contact information
+                  <Phone className="size-5 text-primary" /> Contact information
                 </h2>
                 <div className="mt-5 space-y-5">
                   <div className="space-y-2">
@@ -471,7 +471,7 @@ function EditEvent() {
                       id="contact_name"
                       value={form.contact_name}
                       onChange={set("contact_name")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                   <div className="space-y-2">
@@ -480,13 +480,13 @@ function EditEvent() {
                       id="contact_phone"
                       value={form.contact_phone}
                       onChange={set("contact_phone")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-[#00d084]/20 bg-[#00d084]/10 p-5 shadow-xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <Button
                   type="submit"
                   disabled={update.isPending}

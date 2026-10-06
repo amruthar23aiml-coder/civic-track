@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
+import { reportStatusClass } from "@/lib/report-status-style";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SiteLayout } from "@/components/SiteLayout";
@@ -518,7 +519,10 @@ function AuthorityDashboard() {
                       </p>
                     </div>
 
-                    <Badge variant="secondary" className="shrink-0 capitalize">
+                    <Badge
+                      variant="outline"
+                      className={`shrink-0 capitalize ${reportStatusClass(report.status)}`}
+                    >
                       {statusLabel(report.status)}
                     </Badge>
                   </div>
@@ -650,7 +654,7 @@ function AuthorityDashboard() {
                           report as completed.
                         </p>
 
-                        <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90">
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary-hover hover:text-primary-hover-foreground">
                           <Upload className="mr-2 size-4" />
                           Upload Resolution Photo
                           <input

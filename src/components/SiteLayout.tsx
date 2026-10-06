@@ -137,7 +137,7 @@ export function SiteLayout({ children, role }: { children: React.ReactNode; role
                 "flex size-9 items-center justify-center rounded-xl transition-transform duration-300 group-hover:rotate-[-6deg]",
                 isAdminShell
                   ? "bg-background/15"
-                  : "bg-primary text-primary-foreground shadow-[0_8px_24px_-12px_var(--primary)]",
+                  : "bg-primary text-primary-foreground shadow-sm",
               )}
             >
               {isAdminShell ? <ShieldCheck className="size-5" /> : <Leaf className="size-5" />}

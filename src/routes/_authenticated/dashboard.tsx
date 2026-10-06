@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { earnedBadges, nextMilestone } from "@/lib/badges";
 import { reportStatusLabel } from "@/components/ReportStatusProgress";
+import { reportStatusClass } from "@/lib/report-status-style";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -43,12 +44,6 @@ function imageUrl(path: string | null) {
   return path.startsWith("http")
     ? path
     : `${import.meta.env["VITE_SUPABASE_URL"]}/storage/v1/object/public/report-photos/${path}`;
-}
-
-function reportStatusTone(status: string) {
-  if (status === "rejected") return "destructive" as const;
-  if (status === "completed") return "default" as const;
-  return "secondary" as const;
 }
 
 function Dashboard() {
@@ -273,7 +268,10 @@ function Dashboard() {
                           Submitted {format(new Date(report.created_at), "d MMM yyyy · HH:mm")}
                         </p>
                       </div>
-                      <Badge variant={reportStatusTone(report.status)} className="shrink-0">
+                      <Badge
+                        variant="outline"
+                        className={`shrink-0 ${reportStatusClass(report.status)}`}
+                      >
                         {reportStatusLabel(report.status)}
                       </Badge>
                     </div>

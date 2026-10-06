@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { reportStatusClass, reportStatusTextClass } from "@/lib/report-status-style";
 
 export type ReportStatus =
   "submitted" | "verified" | "assigned" | "in_progress" | "completed" | "rejected";
@@ -54,7 +55,9 @@ export function ReportStatusProgress({
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
             Current status
           </p>
-          <p className="mt-1 text-lg font-semibold text-primary">{reportStatusLabel(status)}</p>
+          <p className={cn("mt-1 text-lg font-semibold", reportStatusTextClass(status))}>
+            {reportStatusLabel(status)}
+          </p>
         </div>
         {statusDate && (
           <p className="text-right text-xs text-muted-foreground">
@@ -73,6 +76,8 @@ export function ReportStatusProgress({
           const isComplete = currentIndex >= 0 && index <= currentIndex;
           const isCurrent = index === currentIndex;
 
+          const stepStatus = step.value;
+
           return (
             <div key={step.value} className="flex min-w-0 flex-1 items-start">
               <div className="flex min-w-0 flex-col items-center">
@@ -80,9 +85,7 @@ export function ReportStatusProgress({
                   className={cn(
                     "flex size-10 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors",
                     isComplete
-                      ? isCurrent
-                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                        : "border-primary/70 bg-primary/15 text-primary"
+                      ? cn(reportStatusClass(stepStatus), isCurrent && "shadow-sm", "border-2")
                       : "border-border bg-background text-muted-foreground",
                   )}
                 >
@@ -95,7 +98,9 @@ export function ReportStatusProgress({
                 <span
                   className={cn(
                     "mt-2 text-center text-[11px] leading-tight",
-                    isCurrent ? "font-semibold text-primary" : "text-muted-foreground",
+                    isCurrent
+                      ? cn("font-semibold", reportStatusTextClass(stepStatus))
+                      : "text-muted-foreground",
                   )}
                 >
                   {step.label}
@@ -106,7 +111,17 @@ export function ReportStatusProgress({
                 <div
                   className={cn(
                     "mt-5 h-0.5 flex-1",
-                    currentIndex > index ? "bg-primary" : "bg-border",
+                    currentIndex > index
+                      ? stepStatus === "verified"
+                        ? "bg-teal"
+                        : stepStatus === "in_progress"
+                          ? "bg-warning"
+                          : stepStatus === "completed"
+                            ? "bg-success"
+                            : stepStatus === "assigned"
+                              ? "bg-chart-4"
+                              : "bg-information"
+                      : "bg-border",
                   )}
                 />
               )}

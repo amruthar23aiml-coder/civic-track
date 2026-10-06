@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SiteLayout } from "@/components/SiteLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { ReportStatusProgress } from "@/components/ReportStatusProgress";
+import { reportStatusClass } from "@/lib/report-status-style";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/my-reports")({
@@ -74,22 +75,6 @@ function MyReports() {
         return "Rejected";
       default:
         return status.replaceAll("_", " ");
-    }
-  };
-
-  const getStatusVariant = (
-    status: string,
-  ): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case "resolved":
-        return "default";
-      case "rejected":
-        return "destructive";
-      case "in_progress":
-      case "assigned":
-        return "secondary";
-      default:
-        return "outline";
     }
   };
 
@@ -196,7 +181,10 @@ function MyReports() {
                     </p>
                   </div>
 
-                  <Badge variant={getStatusVariant(report.status)} className="shrink-0 capitalize">
+                  <Badge
+                    variant="outline"
+                    className={`shrink-0 capitalize ${reportStatusClass(report.status)}`}
+                  >
                     {getStatusLabel(report.status)}
                   </Badge>
                 </div>

@@ -32,7 +32,7 @@ export const Route = createFileRoute("/leaderboard")({
 });
 
 const placeStyles: Record<number, string> = {
-  1: "border-amber-400/45 bg-amber-400/[0.07] shadow-[0_12px_35px_-22px_rgba(251,191,36,0.65)]",
+  1: "border-amber-400/45 bg-amber-400/[0.07] shadow-sm",
   2: "border-slate-300/35 bg-slate-300/[0.045]",
   3: "border-orange-500/35 bg-orange-500/[0.045]",
 };

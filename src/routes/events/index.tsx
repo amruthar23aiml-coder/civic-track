@@ -47,7 +47,7 @@ function EventsPage() {
             </p>
           </div>
           {isOrganizer && (
-            <Button asChild className="shadow-[0_12px_30px_-18px_var(--primary)]">
+            <Button asChild className="shadow-sm">
               <Link to="/events/new">
                 <Plus className="size-4" /> New event
               </Link>

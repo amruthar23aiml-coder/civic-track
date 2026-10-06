@@ -315,11 +315,11 @@ function NewEvent() {
 
   return (
     <SiteLayout>
-      <main className="min-h-screen bg-[#080c0a] text-white">
+      <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
           {/* Header */}
           <div className="mb-8 max-w-3xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#00d084]/20 bg-[#00d084]/10 px-3 py-1 text-xs font-medium text-[#39ff14]">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
               <CalendarDays className="size-3.5" />
               Community event
             </div>
@@ -328,7 +328,7 @@ function NewEvent() {
               Create an event
             </h1>
 
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55 sm:text-base">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
               Bring people together around an initiative that makes
               your community better.
             </p>
@@ -344,13 +344,13 @@ function NewEvent() {
             {/* LEFT */}
             <div className="space-y-6">
               {/* Basic information */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold">
                     Event information
                   </h2>
 
-                  <p className="mt-1 text-sm text-white/45">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Tell people what this event is about.
                   </p>
                 </div>
@@ -366,7 +366,7 @@ function NewEvent() {
                         setCategory(value as EventCategory)
                       }
                     >
-                      <SelectTrigger className="h-11 border-white/10 bg-black/20">
+                      <SelectTrigger className="h-11 border-input bg-background/50">
                         <SelectValue />
                       </SelectTrigger>
 
@@ -417,7 +417,7 @@ function NewEvent() {
                         onChange={(event) =>
                           setCategoryOther(event.target.value)
                         }
-                        className="h-11 border-white/10 bg-black/20"
+                        className="h-11 border-input bg-background/50"
                       />
                     </div>
                   )}
@@ -435,7 +435,7 @@ function NewEvent() {
                       placeholder="Give your event a clear name"
                       value={form.title}
                       onChange={set("title")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
 
@@ -453,20 +453,20 @@ function NewEvent() {
                       placeholder="Explain what participants will do and what they should know."
                       value={form.description}
                       onChange={set("description")}
-                      className="resize-none border-white/10 bg-black/20"
+                      className="resize-none border-input bg-background/50"
                     />
                   </div>
                 </div>
               </section>
 
               {/* Cover image */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <div className="mb-5">
                   <h2 className="text-lg font-semibold">
                     Event cover image
                   </h2>
 
-                  <p className="mt-1 text-sm text-white/45">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Add a photo that represents your event.
                   </p>
                 </div>
@@ -474,9 +474,9 @@ function NewEvent() {
                 {!imagePreview ? (
                   <label
                     htmlFor="cover-image"
-                    className="group flex min-h-[230px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-black/20 px-6 text-center transition hover:border-[#00d084]/50 hover:bg-[#00d084]/5"
+                    className="group flex min-h-[230px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/50 px-6 text-center transition hover:border-primary/40 hover:bg-primary/5"
                   >
-                    <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-[#00d084]/10 text-[#00d084] transition group-hover:scale-105">
+                    <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition group-hover:scale-105">
                       <ImagePlus className="size-7" />
                     </div>
 
@@ -484,7 +484,7 @@ function NewEvent() {
                       Upload event image
                     </p>
 
-                    <p className="mt-1 text-xs text-white/40">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       JPG, PNG or WEBP · up to 5 MB
                     </p>
 
@@ -511,7 +511,7 @@ function NewEvent() {
                     />
                   </label>
                 ) : (
-                  <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
+                  <div className="relative overflow-hidden rounded-2xl border border-border bg-background">
                     <img
                       src={imagePreview}
                       alt="Event cover preview"
@@ -526,7 +526,7 @@ function NewEvent() {
                       <button
                         type="button"
                         onClick={removeImage}
-                        className="inline-flex items-center gap-2 rounded-lg bg-black/60 px-3 py-2 text-xs font-medium text-white backdrop-blur transition hover:bg-red-500/80"
+                        className="inline-flex items-center gap-2 rounded-lg bg-destructive/85 px-3 py-2 text-xs font-medium text-destructive-foreground backdrop-blur transition hover:bg-destructive"
                       >
                         <X className="size-4" />
                         Remove
@@ -538,13 +538,13 @@ function NewEvent() {
 
               {/* Category-specific details */}
               {def.fields.length > 0 && (
-                <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+                <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                   <div className="mb-6">
                     <h2 className="text-lg font-semibold">
                       {def.label} details
                     </h2>
 
-                    <p className="mt-1 text-sm text-white/45">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       Only information relevant to this event type
                       is shown here.
                     </p>
@@ -580,7 +580,7 @@ function NewEvent() {
                                   event.target.value,
                               }))
                             }
-                            className="resize-none border-white/10 bg-black/20"
+                            className="resize-none border-input bg-background/50"
                           />
                         ) : field.type === "select" ? (
                           <Select
@@ -594,7 +594,7 @@ function NewEvent() {
                               }))
                             }
                           >
-                            <SelectTrigger className="h-11 border-white/10 bg-black/20">
+                            <SelectTrigger className="h-11 border-input bg-background/50">
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
 
@@ -644,7 +644,7 @@ function NewEvent() {
                                   event.target.value,
                               }))
                             }
-                            className="h-11 border-white/10 bg-black/20"
+                            className="h-11 border-input bg-background/50"
                           />
                         )}
                       </div>
@@ -654,14 +654,14 @@ function NewEvent() {
               )}
 
               {/* Location */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <div className="mb-6">
                   <h2 className="flex items-center gap-2 text-lg font-semibold">
-                    <MapPin className="size-5 text-[#00d084]" />
+                    <MapPin className="size-5 text-primary" />
                     Event location
                   </h2>
 
-                  <p className="mt-1 text-sm text-white/45">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Help participants find the event easily.
                   </p>
                 </div>
@@ -679,7 +679,7 @@ function NewEvent() {
                       placeholder="Riverside Park, Community Hall..."
                       value={form.location_name}
                       onChange={set("location_name")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
 
@@ -695,7 +695,7 @@ function NewEvent() {
                         placeholder="Enter the full address"
                         value={form.address}
                         onChange={set("address")}
-                        className="h-11 border-white/10 bg-black/20"
+                        className="h-11 border-input bg-background/50"
                       />
 
                       <Button
@@ -746,9 +746,9 @@ function NewEvent() {
             {/* RIGHT SIDEBAR */}
             <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
               {/* Date */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl">
                 <h2 className="mb-5 flex items-center gap-2 font-semibold">
-                  <CalendarDays className="size-5 text-[#00d084]" />
+                  <CalendarDays className="size-5 text-primary" />
                   Schedule
                 </h2>
 
@@ -764,7 +764,7 @@ function NewEvent() {
                       required
                       value={form.starts_at}
                       onChange={set("starts_at")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
 
@@ -778,16 +778,16 @@ function NewEvent() {
                       type="datetime-local"
                       value={form.ends_at}
                       onChange={set("ends_at")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                 </div>
               </section>
 
               {/* Capacity */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl">
                 <h2 className="mb-5 flex items-center gap-2 font-semibold">
-                  <Users className="size-5 text-[#00d084]" />
+                  <Users className="size-5 text-primary" />
                   Participation
                 </h2>
 
@@ -803,19 +803,19 @@ function NewEvent() {
                     max="1000"
                     value={form.capacity}
                     onChange={set("capacity")}
-                    className="h-11 border-white/10 bg-black/20"
+                    className="h-11 border-input bg-background/50"
                   />
 
-                  <p className="text-xs text-white/35">
+                  <p className="text-xs text-muted-foreground">
                     Maximum number of people who can register.
                   </p>
                 </div>
               </section>
 
               {/* Contact */}
-              <section className="rounded-2xl border border-white/10 bg-white/[0.045] p-5 shadow-2xl backdrop-blur-xl">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl">
                 <h2 className="mb-5 flex items-center gap-2 font-semibold">
-                  <Phone className="size-5 text-[#00d084]" />
+                  <Phone className="size-5 text-primary" />
                   Contact
                 </h2>
 
@@ -831,7 +831,7 @@ function NewEvent() {
                       placeholder="Near the main gate..."
                       value={form.landmark}
                       onChange={set("landmark")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
 
@@ -846,7 +846,7 @@ function NewEvent() {
                       placeholder="Contact name"
                       value={form.contact_name}
                       onChange={set("contact_name")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
 
@@ -861,15 +861,15 @@ function NewEvent() {
                       placeholder="Phone number"
                       value={form.contact_phone}
                       onChange={set("contact_phone")}
-                      className="h-11 border-white/10 bg-black/20"
+                      className="h-11 border-input bg-background/50"
                     />
                   </div>
                 </div>
               </section>
 
               {/* Publish */}
-              <section className="rounded-2xl border border-[#00d084]/20 bg-[#00d084]/[0.06] p-5">
-                <p className="text-sm leading-6 text-white/60">
+              <section className="rounded-2xl border border-border/70 bg-card/70 p-5">
+                <p className="text-sm leading-6 text-muted-foreground">
                   Your event will be visible to the CivicTrack
                   community after publishing.
                 </p>
@@ -877,7 +877,7 @@ function NewEvent() {
                 <Button
                   type="submit"
                   disabled={create.isPending}
-                  className="mt-4 h-12 w-full bg-[#00d084] font-semibold text-black hover:bg-[#39ff14]"
+                  className="mt-4 h-12 w-full bg-primary font-semibold text-primary-foreground hover:bg-primary-hover hover:text-primary-hover-foreground"
                 >
                   {create.isPending ? (
                     <>

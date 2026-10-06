@@ -52,19 +52,19 @@ const categories: {
   {
     value: "streetlight",
     icon: "💡",
-    title: "Broken Streetlight",
+    title: "Streetlight",
     description: "Streetlight that is damaged, flickering, or not working",
   },
   {
     value: "pothole",
     icon: "🕳️",
-    title: "Pothole / Damaged Road",
+    title: "Pothole",
     description: "Potholes, broken roads, or unsafe road surfaces",
   },
   {
     value: "garbage",
     icon: "🗑️",
-    title: "Garbage / Litter",
+    title: "Garbage",
     description: "Waste left on streets or in public spaces",
   },
   {
@@ -94,7 +94,7 @@ const categories: {
   {
     value: "other",
     icon: "✏️",
-    title: "Other Issue",
+    title: "Other",
     description: "Something else that needs attention",
   },
 ];
@@ -138,6 +138,7 @@ function ReportGarbage() {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const skipMatchingRef = useRef(false);
+  const detectionRequestRef = useRef(0);
 
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<ReportCategory | "">("");
@@ -179,6 +180,7 @@ function ReportGarbage() {
       return;
     }
 
+    const requestId = ++detectionRequestRef.current;
     setPhoto(file);
 
     const previewUrl = URL.createObjectURL(file);
@@ -187,18 +189,39 @@ function ReportGarbage() {
     setDetectionFailed(false);
     setIsDetecting(true);
 
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     try {
-      const result = await detectIssueCategory(file);
+      const result = await Promise.race([
+        detectIssueCategory(file),
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error("Image analysis timed out")),
+            15_000,
+          );
+        }),
+      ]);
+      if (requestId !== detectionRequestRef.current) {
+        return;
+      }
       setDetection(result);
+      setCategory(result.category);
     } catch (error) {
       console.error(error);
-      setDetectionFailed(true);
+      if (requestId === detectionRequestRef.current) {
+        setDetectionFailed(true);
+      }
     } finally {
-      setIsDetecting(false);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (requestId === detectionRequestRef.current) {
+        setIsDetecting(false);
+      }
     }
   }
 
   function removePhoto() {
+    detectionRequestRef.current += 1;
     if (photoPreview) {
       URL.revokeObjectURL(photoPreview);
     }
@@ -414,7 +437,7 @@ function ReportGarbage() {
     ) : (
       <>
         {/* Hero */}
-        <section className="relative overflow-hidden border-b border-white/10">
+        <section className="relative overflow-hidden border-b border-border/70">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent" />
 
           <div className="relative mx-auto max-w-7xl px-4 pb-10 pt-8 sm:px-6 lg:px-8">
@@ -482,29 +505,31 @@ function ReportGarbage() {
         >
           <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
             {/* LEFT SIDE */}
-            <div className="space-y-8">
+            <div className="flex flex-col gap-8">
               {/* Issue details */}
-              <section className="rounded-3xl border border-white/10 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
+              <section className="order-2 rounded-3xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7 lg:order-2">
                 <div className="mb-6 flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <FileText className="h-5 w-5" />
                   </div>
 
                   <div>
-                    <h2 className="text-xl font-semibold">
-                      Tell us what you noticed
-                    </h2>
+                    <h2 className="text-xl font-semibold">Type of Issue</h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      A few details will help the right team understand the
-                      problem.
+                      Select the issue type that best matches what you found.
                     </p>
                   </div>
                 </div>
 
                 <div>
                   <Label className="mb-3 block text-sm font-medium">
-                    What type of issue is this?
+                    Type of Issue
                   </Label>
+                  {detection && (
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      AI suggested this issue type. You can change it if needed.
+                    </p>
+                  )}
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     {categories.map((item) => {
@@ -517,8 +542,8 @@ function ReportGarbage() {
                           onClick={() => setCategory(item.value)}
                           className={`group rounded-2xl border p-4 text-left transition-all duration-200 ${
                             selected
-                              ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
-                              : "border-white/10 bg-background/30 hover:border-primary/30 hover:bg-primary/5"
+                              ? "border-primary bg-primary/10 shadow-sm"
+                              : "border-border/70 bg-background/30 hover:border-primary/30 hover:bg-primary/5"
                           }`}
                         >
                           <div className="flex items-start gap-3">
@@ -591,7 +616,7 @@ function ReportGarbage() {
               </section>
 
               {/* Photo */}
-              <section className="rounded-3xl border border-white/10 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
+              <section className="order-1 rounded-3xl border border-border/70 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7 lg:order-1">
                 <div className="mb-6 flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <Camera className="h-5 w-5" />
@@ -599,10 +624,11 @@ function ReportGarbage() {
 
                   <div>
                     <h2 className="text-xl font-semibold">
-                      Show us what’s happening
+                      Upload a Photo
                     </h2>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Add a photo so the issue can be understood more clearly.
+                      Add a photo of the civic issue so CivicTrack can identify
+                      the issue type.
                     </p>
                   </div>
                 </div>
@@ -610,7 +636,7 @@ function ReportGarbage() {
                 {!photoPreview ? (
                   <label
                     htmlFor="issue-photo"
-                    className="group flex min-h-[230px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-background/30 px-6 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
+                    className="group flex min-h-[230px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-background/30 px-6 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
                   >
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-transform group-hover:scale-105">
                       <ImagePlus className="h-7 w-7" />
@@ -630,7 +656,7 @@ function ReportGarbage() {
                     </div>
 
                     <p className="mt-3 text-xs text-muted-foreground">
-                      JPG, PNG or other image formats · Max 10 MB
+                      JPG, PNG or other image formats · Max 5 MB
                     </p>
 
                     <input
@@ -644,7 +670,7 @@ function ReportGarbage() {
                     />
                   </label>
                 ) : (
-                  <div className="overflow-hidden rounded-2xl border border-white/10 bg-background/30">
+                  <div className="overflow-hidden rounded-2xl border border-border/70 bg-background/30">
                     <div className="relative">
                       <img
                         src={photoPreview}
@@ -694,41 +720,38 @@ function ReportGarbage() {
                 {(isDetecting || detection || detectionFailed) && (
                   <div className="mt-4 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                     {isDetecting && (
-                      <p className="text-sm text-muted-foreground">
-                        Checking the image for a likely issue category...
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <span className="size-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                        <div>
+                          <p className="text-sm font-medium">Analyzing image...</p>
+                          <p className="text-xs text-muted-foreground">
+                            Identifying the civic issue type
+                          </p>
+                        </div>
+                      </div>
                     )}
 
                     {detection && (
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-sm font-medium">
-                            Suggested category:{" "}
+                            AI identified:{" "}
                             <span className="text-primary">
                               {categoryLabel(detection.category)}
                             </span>
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             Model confidence:{" "}
-                            {Math.round(detection.confidence * 100)}%. Confirm
-                            or choose another category above.
+                            {Math.round(detection.confidence * 100)}%.
                           </p>
                         </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={() => setCategory(detection.category)}
-                        >
-                          Confirm suggestion
-                        </Button>
                       </div>
                     )}
 
                     {detectionFailed && !detection && (
                       <p className="text-sm text-muted-foreground">
-                        Image detection is unavailable right now. Please
-                        choose the category manually; your report can still be
-                        submitted.
+                        AI detection is unavailable. Please select the issue
+                        type manually.
                       </p>
                     )}
                   </div>
@@ -739,7 +762,7 @@ function ReportGarbage() {
             {/* RIGHT SIDE */}
             <div className="space-y-8">
               {/* Location */}
-              <section className="overflow-hidden rounded-3xl border border-white/10 bg-card/70 shadow-xl backdrop-blur-xl">
+              <section className="overflow-hidden rounded-3xl border border-border/70 bg-card/70 shadow-xl backdrop-blur-xl">
                 <div className="p-5 pb-4 sm:p-7 sm:pb-5">
                   <div className="flex items-start gap-4">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -758,7 +781,7 @@ function ReportGarbage() {
                   </div>
                 </div>
 
-                <div className="border-t border-white/10">
+                <div className="border-t border-border/70">
                   <ReportLocationMap
                     latitude={latitude}
                     longitude={longitude}
@@ -780,7 +803,7 @@ function ReportGarbage() {
               </section>
 
               {/* Submit */}
-              <section className="rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card/70 to-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
+              <section className="rounded-3xl border border-primary/20 bg-card/70 p-5 shadow-xl backdrop-blur-xl sm:p-7">
                 <div className="flex items-start gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
                     <Send className="h-5 w-5" />
@@ -817,7 +840,7 @@ function ReportGarbage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="mt-7 h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/10"
+                  className="mt-7 h-12 w-full rounded-xl text-base font-semibold shadow-sm"
                 >
                   {isSubmitting ? (
                     <>
@@ -842,7 +865,7 @@ function ReportGarbage() {
         </form>
 
         <Dialog open={showMatches} onOpenChange={setShowMatches}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto border-white/10 bg-card/95 backdrop-blur-xl sm:max-w-2xl">
+          <DialogContent className="max-h-[90vh] overflow-y-auto border-border/70 bg-card/95 backdrop-blur-xl sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <TriangleAlert className="h-5 w-5 text-amber-400" />
@@ -861,7 +884,7 @@ function ReportGarbage() {
                   key={match.id}
                   type="button"
                   onClick={() => setSelectedMatch(match)}
-                  className="flex w-full gap-4 rounded-2xl border border-white/10 bg-background/30 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
+                  className="flex w-full gap-4 rounded-2xl border border-border/70 bg-background/30 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   {match.before_image_url && (
                     <img
@@ -929,7 +952,7 @@ function ReportGarbage() {
             }
           }}
         >
-          <DialogContent className="border-white/10 bg-card/95 backdrop-blur-xl">
+          <DialogContent className="border-border/70 bg-card/95 backdrop-blur-xl">
             {selectedMatch && (
               <>
                 <DialogHeader>

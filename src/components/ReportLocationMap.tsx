@@ -375,7 +375,7 @@ export function ReportLocationMap({
           className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
           aria-hidden="true"
         >
-          <div className="flex size-11 items-center justify-center rounded-full border-2 border-primary bg-primary/15 shadow-lg shadow-primary/30">
+          <div className="flex size-11 items-center justify-center rounded-full border-2 border-primary bg-primary/15 shadow-sm">
             <Crosshair className="size-6 text-primary" />
           </div>
         </div>
@@ -407,7 +407,7 @@ export function ReportLocationMap({
           type="button"
           onClick={handleConfirm}
           disabled={geocoding || !pendingLocation || !address.trim()}
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover hover:text-primary-hover-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
           {confirmed ? "Location selected" : "Confirm this location"}
         </button>

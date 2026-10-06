@@ -7,7 +7,11 @@ import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { SiteLayout } from "@/components/SiteLayout";
-import { ReportStatusProgress, reportStatusLabel } from "@/components/ReportStatusProgress";
+import {
+  ReportStatusProgress,
+  reportStatusLabel,
+} from "@/components/ReportStatusProgress";
+import { reportStatusClass } from "@/lib/report-status-style";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/reports")({
@@ -213,8 +217,8 @@ function PublicReports() {
                     </p>
                   </div>
                   <Badge
-                    variant={report.status === "completed" ? "default" : "secondary"}
-                    className="ml-auto"
+                    variant="outline"
+                    className={`ml-auto ${reportStatusClass(report.status)}`}
                   >
                     {reportStatusLabel(report.status)}
                   </Badge>
